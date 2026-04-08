@@ -425,8 +425,8 @@ body {{
   height: {cube_s}px;
   transform-style: preserve-3d;
   overflow: visible;
-  transition: --h .55s cubic-bezier(.34,1.56,.64,1),
-              --bot .55s cubic-bezier(.34,1.56,.64,1);
+  /* Sin transition aquí: reveal/hide la activan por inline style;
+     setFrame hace snap puro (no hay CSS que pelee) */
   transform: translateZ(var(--bot));
 }}
 
@@ -680,22 +680,21 @@ body {{
   let frame2     = false;   // false = Frame1, true = Frame2
   let timer      = null;
 
+  const CASCADE = "--h .55s cubic-bezier(.34,1.56,.64,1), --bot .55s cubic-bezier(.34,1.56,.64,1)";
+
   function setFrame(toF2) {{
     frame2 = toF2;
     modules.forEach(m => {{
-      m.style.transition      = "none";   // snap instantaneo en altura
+      m.style.transition      = "none";   // snap puro — sin CSS que pelee
       m.style.transitionDelay = "0ms";
       m.style.setProperty("--h", (toF2 ? m.dataset.f2h : m.dataset.target) + "px");
     }});
-    rings.forEach(r => {{
-      // NO matar transition en .face — deja que background-color transite
-      r.classList.toggle("visible", toF2);
-    }});
+    rings.forEach(r => r.classList.toggle("visible", toF2));
   }}
 
   function revealEgg() {{
     modules.forEach(m => {{
-      m.style.transition = "";                        // restaura CSS transition → cascade
+      m.style.transition      = CASCADE;              // cascade activo solo al revelar
       m.style.transitionDelay = m.dataset.upDelay + "ms";
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
@@ -722,7 +721,7 @@ body {{
 
   function hideEgg() {{
     modules.forEach(m => {{
-      m.style.transition = "";                        // restaura CSS transition → cascade
+      m.style.transition      = CASCADE;              // cascade activo solo al ocultar
       m.style.transitionDelay = m.dataset.downDelay + "ms";
       m.style.setProperty("--h",   BASE + "px");
       m.style.setProperty("--bot", "0px");
