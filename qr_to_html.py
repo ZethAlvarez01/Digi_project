@@ -491,9 +491,8 @@ body {{
   </div>
 </div>
 
-<div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:100;">
+<div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <button class="btn-egg" id="btn">🥚 Reveal Egg</button>
-<button class="btn-egg" id="btn-pulse" disabled style="opacity:.4">💥 Pulse</button>
 </div>
 
 <script>
@@ -584,23 +583,20 @@ body {{
 
 /* ---- Egg reveal + Auto-Pulse ---- */
 (function() {{
-  const btn      = document.getElementById("btn");
-  const btnPulse = document.getElementById("btn-pulse");
-  const modules  = document.querySelectorAll(".module");
-  const rings    = document.querySelectorAll(".pulse-ring");
-  const BASE     = {base_h};
+  const btn     = document.getElementById("btn");
+  const modules = document.querySelectorAll(".module");
+  const rings   = document.querySelectorAll(".pulse-ring");
+  const BASE    = {base_h};
 
   let eggVisible = false;
-  let pulseOn    = false;   // true = en frame 2
-  let paused     = false;
-  let autoTimer  = null;    // setInterval handle
-  let startTimer = null;    // setTimeout inicial
+  let pulseOn    = false;
+  let autoTimer  = null;
+  let startTimer = null;
   let ringTimer  = null;
 
-  const PULSE_MS = 2200;    // ms entre frames
-  const START_MS = 1600;    // ms tras reveal antes del primer pulso
+  const PULSE_MS = 2200;
+  const START_MS = 1600;
 
-  /* ---- módulos ---- */
   function setModules(toEgg) {{
     modules.forEach(m => {{
       const delay  = toEgg ? m.dataset.upDelay : m.dataset.downDelay;
@@ -612,7 +608,6 @@ body {{
     }});
   }}
 
-  /* ---- pulse frame — solo cambia alturas de módulos ---- */
   function applyPulse(toF2) {{
     pulseOn = toF2;
     modules.forEach(m => {{
@@ -623,12 +618,9 @@ body {{
 
   function tick() {{ applyPulse(!pulseOn); }}
 
-  /* ---- control del auto-play ---- */
   function startAutoPlay() {{
-    paused = false;
-    btnPulse.textContent = "⏸️ Pausar";
     startTimer = setTimeout(() => {{
-      applyPulse(true);                         // primer salto a F2
+      applyPulse(true);
       autoTimer = setInterval(tick, PULSE_MS);
     }}, START_MS);
   }}
@@ -639,47 +631,23 @@ body {{
     autoTimer = startTimer = null;
   }}
 
-  /* ---- rings ---- */
   function showRings() {{ rings.forEach(r => r.classList.add("visible")); }}
-  function hideRings() {{
-    clearTimeout(ringTimer);
-    rings.forEach(r => r.classList.remove("visible"));
-  }}
+  function hideRings() {{ clearTimeout(ringTimer); rings.forEach(r => r.classList.remove("visible")); }}
 
-  /* ---- Reveal button ---- */
   btn.addEventListener("click", () => {{
     eggVisible = !eggVisible;
     if (!eggVisible) {{
       stopAutoPlay();
       hideRings();
-      applyPulse(false);         // vuelve a F1 antes de bajar
-      btnPulse.disabled = true;
-      btnPulse.style.opacity = ".4";
-      btnPulse.textContent = "⏸️ Pausar";
-      paused = false;
+      applyPulse(false);
     }}
     setModules(eggVisible);
     if (eggVisible) {{
-      ringTimer = setTimeout(showRings, 600);  // rings visibles
-      startAutoPlay();                          // auto-pulso
-      btnPulse.disabled = false;
-      btnPulse.style.opacity = "1";
+      ringTimer = setTimeout(showRings, 600);
+      startAutoPlay();
     }}
     btn.textContent = eggVisible ? "🔄 Reset QR" : "🥚 Reveal Egg";
     btn.style.boxShadow = eggVisible ? "0 0 22px 8px {glow1}" : "0 0 12px 4px {glow2}";
-  }});
-
-  /* ---- Pulse button — pausa / resume ---- */
-  btnPulse.addEventListener("click", () => {{
-    if (!eggVisible) return;
-    paused = !paused;
-    if (paused) {{
-      stopAutoPlay();
-      btnPulse.textContent = "▶️ Reanudar";
-    }} else {{
-      startAutoPlay();
-      btnPulse.textContent = "⏸️ Pausar";
-    }}
   }});
 }})();
 </script>
