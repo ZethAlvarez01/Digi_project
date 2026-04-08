@@ -460,7 +460,6 @@ body {{
       : "0 0 12px 4px {glow2}";
   }});
 }})();
-}})();
 </script>
 </body>
 </html>
