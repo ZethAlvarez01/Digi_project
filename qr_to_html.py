@@ -111,34 +111,55 @@ def egg_to_board_px(er: int, ec: int) -> tuple[int, int]:
     return (ec + EGG_OFF) * CUBE_S, (er + EGG_OFF) * CUBE_S  # x, y
 
 
-def build_pulse_rings_html() -> str:
-    """Genera divs de anillo de expansión. Invisibles (opacity:0) hasta reveal.
-    Solo renderiza las caras visibles de cada celda (top + perimetro exterior).
+def _ring_dist(er: int, ec: int, f1: int) -> int:
+    """Distancia Chebyshev de la celda al borde exterior del cuadrado f1.
+    Celdas adyacentes al f1 = 1, una más afuera = 2, etc."""
+    lo = (EGG_N - f1) // 2
+    hi = lo + f1 - 1
+    dr = max(0, lo - er, er - hi)
+    dc = max(0, lo - ec, ec - hi)
+    return max(dr, dc)
+
+
+def build_pulse_rings_html(matrix: list[list[bool]], n: int) -> str:
+    """Genera divs de anillo de expansión. Invisibles hasta reveal.
+    - Color heredado del módulo QR en esa posición (qr-active / qr-inactive).
+    - Delay staggered: z_idx * 60 + (ring_dist-1) * 30 ms → expande desde dentro.
+    - Solo caras visibles del perímetro exterior.
     """
     parts: list[str] = []
     for _nivel, f1, f2, z_idx in EXPANDING_LEVELS:
-        bot_px   = (z_idx + EGG_LIFT) * CUBE_H
-        delta    = get_ring_delta(f1, f2)
+        bot_px    = (z_idx + EGG_LIFT) * CUBE_H
+        delta     = get_ring_delta(f1, f2)
         delta_set = set(delta)
 
         for er, ec in delta:
             x, y = egg_to_board_px(er, ec)
-            # Caras: top siempre; bottom siempre (visible al mirar desde abajo);
-            # laterales solo si el vecino NO está en el delta
+
+            # Color del módulo QR en esa posición de tablero
+            br, bc   = er + EGG_OFF, ec + EGG_OFF
+            qr_cls   = "qr-active" if (0 <= br < n and 0 <= bc < n
+                                        and matrix[br][bc]) else "qr-inactive"
+
+            # Stagger outward: celdas más cerca del huevo aparecen antes
+            dist     = _ring_dist(er, ec, f1)
+            delay_ms = z_idx * 60 + (dist - 1) * 30
+
+            # Caras: top + bottom siempre; laterales solo en perímetro
             faces = '<div class="face top"></div><div class="face bottom"></div>'
-            if (er - 1, ec) not in delta_set:  # back (vecino arriba ausente)
+            if (er - 1, ec) not in delta_set:
                 faces += '<div class="face back"></div>'
-            if (er + 1, ec) not in delta_set:  # front
+            if (er + 1, ec) not in delta_set:
                 faces += '<div class="face front"></div>'
-            if (er, ec - 1) not in delta_set:  # left
+            if (er, ec - 1) not in delta_set:
                 faces += '<div class="face left"></div>'
-            if (er, ec + 1) not in delta_set:  # right
+            if (er, ec + 1) not in delta_set:
                 faces += '<div class="face right"></div>'
 
             parts.append(
-                f'<div class="pulse-ring" '
-                f'style="left:{x}px;top:{y}px;'
-                f'transform:translateZ({bot_px}px);" >'
+                f'<div class="pulse-ring {qr_cls}" '
+                f'style="left:{x}px;top:{y}px;transform:translateZ({bot_px}px);" '
+                f'data-ring-delay="{delay_ms}">'
                 f'{faces}</div>'
             )
     return "\n".join(parts)
@@ -360,7 +381,6 @@ body {{
   height: {cube_s}px;
   top: 0; left: 0;
   transform: translateZ(var(--h));
-  outline: 1px solid rgba(0,0,0,0.5);  /* borde debug */
 }}
 
 /* BOTTOM — cara inferior de los ring cubes */
@@ -434,21 +454,28 @@ body {{
   transform-style: preserve-3d;
   overflow: visible;
 }}
-/* Las faces empiezan invisibles — opacity en el hijo, NO en el padre          */
-/* (opacity en el padre rompe preserve-3d en Chrome)                           */
+/* Faces invisibles al inicio; opacity en hijo para no romper preserve-3d */
 .pulse-ring .face {{
   opacity: 0;
-  transition: opacity .35s ease-out;
+  transition: opacity .3s ease-out;
 }}
 .pulse-ring.visible .face {{
   opacity: 1;
 }}
-.pulse-ring .face.top    {{ background: #ff00cc; }}
-.pulse-ring .face.bottom {{ background: #aa0088; }}
-.pulse-ring .face.front  {{ background: linear-gradient(to bottom, #cc0099 0%, #660044 100%); }}
-.pulse-ring .face.right  {{ background: linear-gradient(to right,  #aa0088 0%, #550033 100%); }}
-.pulse-ring .face.left   {{ background: linear-gradient(to left,   #aa0088 0%, #550033 100%); }}
-.pulse-ring .face.back   {{ background: linear-gradient(to top,    #cc0099 0%, #660044 100%); }}
+/* — Color: módulo QR activo (hereda los colores del huevo oscuro) — */
+.pulse-ring.qr-active .face.top    {{ background: {a_top}; }}
+.pulse-ring.qr-active .face.bottom {{ background: {a_back}; }}
+.pulse-ring.qr-active .face.front  {{ background: linear-gradient(to bottom, {a_front} 0%, {a_back} 100%); }}
+.pulse-ring.qr-active .face.right  {{ background: linear-gradient(to right,  {a_right} 0%, {a_back} 100%); }}
+.pulse-ring.qr-active .face.left   {{ background: linear-gradient(to left,   {a_left}  0%, {a_back} 100%); }}
+.pulse-ring.qr-active .face.back   {{ background: linear-gradient(to top,    {a_front} 0%, {a_back} 100%); }}
+/* — Color: módulo QR inactivo (hereda los colores del huevo claro) — */
+.pulse-ring.qr-inactive .face.top    {{ background: {i_top}; }}
+.pulse-ring.qr-inactive .face.bottom {{ background: {i_back}; }}
+.pulse-ring.qr-inactive .face.front  {{ background: linear-gradient(to bottom, {i_front} 0%, {i_back} 100%); }}
+.pulse-ring.qr-inactive .face.right  {{ background: linear-gradient(to right,  {i_right} 0%, {i_back} 100%); }}
+.pulse-ring.qr-inactive .face.left   {{ background: linear-gradient(to left,   {i_left}  0%, {i_back} 100%); }}
+.pulse-ring.qr-inactive .face.back   {{ background: linear-gradient(to top,    {i_front} 0%, {i_back} 100%); }}
 </style>
 </head>
 <body>
@@ -555,17 +582,25 @@ body {{
   wrapper.addEventListener("touchend", () => {{ dragging = false; }});
 }})();
 
-/* ---- Egg reveal + Pulse ---- */
+/* ---- Egg reveal + Auto-Pulse ---- */
 (function() {{
   const btn      = document.getElementById("btn");
   const btnPulse = document.getElementById("btn-pulse");
   const modules  = document.querySelectorAll(".module");
   const rings    = document.querySelectorAll(".pulse-ring");
   const BASE     = {base_h};
+
   let eggVisible = false;
-  let pulseOn    = false;
+  let pulseOn    = false;   // true = en frame 2
+  let paused     = false;
+  let autoTimer  = null;    // setInterval handle
+  let startTimer = null;    // setTimeout inicial
   let ringTimer  = null;
 
+  const PULSE_MS = 2200;    // ms entre frames
+  const START_MS = 1600;    // ms tras reveal antes del primer pulso
+
+  /* ---- módulos ---- */
   function setModules(toEgg) {{
     modules.forEach(m => {{
       const delay  = toEgg ? m.dataset.upDelay : m.dataset.downDelay;
@@ -577,37 +612,74 @@ body {{
     }});
   }}
 
+  /* ---- pulse frame — solo cambia alturas de módulos ---- */
   function applyPulse(toF2) {{
+    pulseOn = toF2;
     modules.forEach(m => {{
       m.style.transitionDelay = "0ms";
       m.style.setProperty("--h", (toF2 ? m.dataset.f2h : m.dataset.target) + "px");
     }});
-    rings.forEach(r => r.classList.toggle("visible", toF2));
   }}
 
-  function showRings() {{ rings.forEach(r => r.classList.add("visible")); }}
-  function hideRings() {{ clearTimeout(ringTimer); rings.forEach(r => r.classList.remove("visible")); }}
+  function tick() {{ applyPulse(!pulseOn); }}
 
+  /* ---- control del auto-play ---- */
+  function startAutoPlay() {{
+    paused = false;
+    btnPulse.textContent = "⏸️ Pausar";
+    startTimer = setTimeout(() => {{
+      applyPulse(true);                         // primer salto a F2
+      autoTimer = setInterval(tick, PULSE_MS);
+    }}, START_MS);
+  }}
+
+  function stopAutoPlay() {{
+    clearTimeout(startTimer);
+    clearInterval(autoTimer);
+    autoTimer = startTimer = null;
+  }}
+
+  /* ---- rings ---- */
+  function showRings() {{ rings.forEach(r => r.classList.add("visible")); }}
+  function hideRings() {{
+    clearTimeout(ringTimer);
+    rings.forEach(r => r.classList.remove("visible"));
+  }}
+
+  /* ---- Reveal button ---- */
   btn.addEventListener("click", () => {{
     eggVisible = !eggVisible;
     if (!eggVisible) {{
-      pulseOn = false;
+      stopAutoPlay();
       hideRings();
-      applyPulse(false);
-      btnPulse.textContent = "💥 Pulse";
+      applyPulse(false);         // vuelve a F1 antes de bajar
+      btnPulse.disabled = true;
+      btnPulse.style.opacity = ".4";
+      btnPulse.textContent = "⏸️ Pausar";
+      paused = false;
     }}
     setModules(eggVisible);
-    if (eggVisible) {{ ringTimer = setTimeout(showRings, 600); }}
-    btnPulse.disabled = !eggVisible;
-    btnPulse.style.opacity = eggVisible ? "1" : ".4";
+    if (eggVisible) {{
+      ringTimer = setTimeout(showRings, 600);  // rings visibles
+      startAutoPlay();                          // auto-pulso
+      btnPulse.disabled = false;
+      btnPulse.style.opacity = "1";
+    }}
     btn.textContent = eggVisible ? "🔄 Reset QR" : "🥚 Reveal Egg";
     btn.style.boxShadow = eggVisible ? "0 0 22px 8px {glow1}" : "0 0 12px 4px {glow2}";
   }});
 
+  /* ---- Pulse button — pausa / resume ---- */
   btnPulse.addEventListener("click", () => {{
-    pulseOn = !pulseOn;
-    applyPulse(pulseOn);
-    btnPulse.textContent = pulseOn ? "🟡 Frame 1" : "💥 Pulse";
+    if (!eggVisible) return;
+    paused = !paused;
+    if (paused) {{
+      stopAutoPlay();
+      btnPulse.textContent = "▶️ Reanudar";
+    }} else {{
+      startAutoPlay();
+      btnPulse.textContent = "⏸️ Pausar";
+    }}
   }});
 }})();
 </script>
@@ -635,7 +707,7 @@ def generate_qr_html(data: str = "Hola Zeth!", output: str = "qr_3d.html") -> Pa
 
     egg        = compute_egg_heights()
     modules    = build_modules_html(matrix, n, egg)
-    rings      = build_pulse_rings_html()
+    rings      = build_pulse_rings_html(matrix, n)
     board_px   = n * CUBE_S
 
     html = HTML_TEMPLATE.format(
