@@ -24,40 +24,50 @@ import qrcode
 #   style 3 ("G" motitas)      → #92D050
 #   style 4 ("N" espiral)      → #1a1a3a
 
-_DIGI_TOP: dict[int, str] = {
-    1: "#ffffff",   # transparente → blanco
-    2: "#ffffff",   # cuerpo
+_DIGI_COLOR: dict[int, str] = {
+    1: "#f0f0f0",   # transparente/esquina
+    2: "#ffffff",   # cuerpo blanco
     3: "#92d050",   # motita verde
-    4: "#1a1a3a",   # espiral oscura
+    4: "#1a1a3a",   # espiral/navy oscuro
 }
-_DIGI_SIDE: dict[int, str] = {
-    1: "#c8d8c0",
-    2: "#c8d8c0",   # blanco lateral (sombra fría)
-    3: "#4a8010",   # verde oscuro lateral
-    4: "#0d0d20",   # navy profundo lateral
+
+# Ligeramente más oscuro para cara superior (da profundidad)
+_DIGI_TOP_MOD: dict[int, str] = {
+    1: "#e0e0e0",
+    2: "#f0fff0",
+    3: "#7ab840",
+    4: "#0d0d20",
 }
 
 
-def load_digi_grid(path: str = "huevo_color.xlsx") -> list[list[int]] | None:
-    """Lee el xlsx y devuelve matriz 12×12 de style-index (1-4).
+def load_digi_grid(path: str = "huevo_color.xlsx") -> tuple[list[list[int]], list[list[int]]] | None:
+    """Lee el xlsx y devuelve (grid_f1, grid_f2): dos matrices 12×12 de style-index.
+    hoja1=frame1 (laterales F1), hoja2=frame2 (laterales F2).
     Retorna None si el archivo no existe.
     """
     p = Path(path)
     if not p.exists():
         return None
     with zipfile.ZipFile(p) as z:
-        styles_xml = z.read("xl/styles.xml").decode("utf-8")
-        sheet_xml  = z.read("xl/worksheets/sheet1.xml").decode("utf-8")
-    # parsear celdas: {(col_letter, row_int): style_idx}
-    cell_styles: dict[tuple[str, int], int] = {}
-    for m in re.finditer(r'<c r="([A-Z]+)(\d+)"[^>]*s="(\d+)"', sheet_xml):
-        cell_styles[(m.group(1), int(m.group(2)))] = int(m.group(3))
-    # egg: filas 5-16, cols F-Q  (12×12)
-    COLS = list("FGHIJKLMNOPQ")
-    grid = []
-    for row in range(5, 17):
-        grid.append([cell_styles.get((col, row), 1) for col in COLS])
-    return grid
+        sheets = sorted(s for s in z.namelist()
+                        if s.startswith("xl/worksheets/sheet"))
+        if len(sheets) < 1:
+            return None
+
+        def parse(sheet_xml: str) -> list[list[int]]:
+            cell_styles: dict[tuple[str, int], int] = {}
+            for m in re.finditer(r'<c r="([A-Z]+)(\d+)"[^>]*s="(\d+)"', sheet_xml):
+                cell_styles[(m.group(1), int(m.group(2)))] = int(m.group(3))
+            COLS = list("FGHIJKLMNOPQ")
+            return [
+                [cell_styles.get((col, row), 1) for col in COLS]
+                for row in range(5, 17)
+            ]
+
+        grid_f1 = parse(z.read(sheets[0]).decode("utf-8"))
+        grid_f2 = parse(z.read(sheets[1]).decode("utf-8")) if len(sheets) > 1 else grid_f1
+
+    return grid_f1, grid_f2
 
 # ---------------------------------------------------------------------------
 # Constantes visuales
@@ -168,9 +178,12 @@ def _ring_dist(er: int, ec: int, f1: int) -> int:
 
 
 def build_pulse_rings_html(matrix: list[list[bool]], n: int,
-                           digi: list[list[int]] | None = None) -> str:
+                           digi: tuple[list[list[int]], list[list[int]]] | None = None) -> str:
     """Genera divs de anillo de expansión. Invisibles hasta reveal."""
     parts: list[str] = []
+    grid_f1 = digi[0] if digi else None
+    grid_f2 = digi[1] if digi else None
+
     for _nivel, f1, f2, z_idx in EXPANDING_LEVELS:
         bot_px    = (z_idx + EGG_LIFT) * CUBE_H
         delta     = get_ring_delta(f1, f2)
@@ -178,19 +191,18 @@ def build_pulse_rings_html(matrix: list[list[bool]], n: int,
 
         for er, ec in delta:
             x, y = egg_to_board_px(er, ec)
-
-            # Color QR base
             br, bc = er + EGG_OFF, ec + EGG_OFF
             qr_cls = "qr-active" if (0 <= br < n and 0 <= bc < n
                                      and matrix[br][bc]) else "qr-inactive"
 
-            # Color Digi-Egg: usa la posición del egg grid si está dentro
-            if digi is not None and 0 <= er < EGG_N and 0 <= ec < EGG_N:
-                style_idx = digi[er][ec]
+            # Color lateral de los rings: usa F1 si dentro del egg, blanco si fuera
+            if grid_f1 and 0 <= er < EGG_N and 0 <= ec < EGG_N:
+                sf1 = grid_f1[er][ec]
+                sf2 = grid_f2[er][ec] if grid_f2 else sf1
             else:
-                style_idx = 2   # blanco por defecto (exterior del egg)
-            digi_top  = _DIGI_TOP.get(style_idx, "#ffffff")
-            digi_side = _DIGI_SIDE.get(style_idx, "#c8d8c0")
+                sf1 = sf2 = 2  # blanco por defecto
+            digi_side_f1 = _DIGI_COLOR.get(sf1, "#f0f0f0")
+            digi_side_f2 = _DIGI_COLOR.get(sf2, "#f0f0f0")
 
             dist     = _ring_dist(er, ec, f1)
             delay_ms = z_idx * 60 + (dist - 1) * 30
@@ -209,8 +221,8 @@ def build_pulse_rings_html(matrix: list[list[bool]], n: int,
                 f'<div class="pulse-ring {qr_cls}" '
                 f'style="left:{x}px;top:{y}px;transform:translateZ({bot_px}px);" '
                 f'data-ring-delay="{delay_ms}" '
-                f'data-digi-top="{digi_top}" '
-                f'data-digi-side="{digi_side}">'
+                f'data-digi-side-f1="{digi_side_f1}" '
+                f'data-digi-side-f2="{digi_side_f2}">'
                 f'{faces}</div>'
             )
     return "\n".join(parts)
@@ -245,15 +257,18 @@ def get_egg_targets(qr_r: int, qr_c: int,
 
 def build_modules_html(matrix: list[list[bool]], n: int,
                         egg: list[list[tuple[int, int]]],
-                        digi: list[list[int]] | None = None) -> str:
+                        digi: tuple[list[list[int]], list[list[int]]] | None = None) -> str:
     """Renderiza los 441 módulos QR con data-target, data-bot y stagger."""
     parts: list[str] = []
-    max_top_px = (_EGG_MAX_TOP + EGG_LIFT) * CUBE_H   # 390 px
+    max_top_px = (_EGG_MAX_TOP + EGG_LIFT) * CUBE_H
+
+    grid_f1 = digi[0] if digi else None
+    grid_f2 = digi[1] if digi else None
 
     for r in range(n):
         for c in range(n):
-            active      = matrix[r][c]
-            cls         = "active" if active else "inactive"
+            active = matrix[r][c]
+            cls    = "active" if active else "inactive"
             x           = c * CUBE_S
             y           = r * CUBE_S
             col_h_px, bot_px = get_egg_targets(r, c, egg)
@@ -273,11 +288,17 @@ def build_modules_html(matrix: list[list[bool]], n: int,
 
             # Colores Digi-Egg (solo celdas dentro del huevo)
             digi_attrs = ""
-            if digi is not None and 0 <= er < EGG_N and 0 <= ec < EGG_N:
-                style_idx  = digi[er][ec]
-                digi_top   = _DIGI_TOP.get(style_idx, "#ffffff")
-                digi_side  = _DIGI_SIDE.get(style_idx, "#c8d8c0")
-                digi_attrs = f'data-digi-top="{digi_top}" data-digi-side="{digi_side}" '
+            if grid_f1 is not None and 0 <= er < EGG_N and 0 <= ec < EGG_N:
+                sf1 = grid_f1[er][ec]
+                sf2 = grid_f2[er][ec] if grid_f2 else sf1
+                digi_top     = _DIGI_TOP_MOD.get(sf1, "#e0e0e0")
+                digi_side_f1 = _DIGI_COLOR.get(sf1, "#f0f0f0")
+                digi_side_f2 = _DIGI_COLOR.get(sf2, "#f0f0f0")
+                digi_attrs = (
+                    f'data-digi-top="{digi_top}" '
+                    f'data-digi-side-f1="{digi_side_f1}" '
+                    f'data-digi-side-f2="{digi_side_f2}" '
+                )
 
             parts.append(
                 f'<div class="module {cls}" '
@@ -454,22 +475,20 @@ body {{
 }}
 
 /* Digi-Egg colorized — clase .digi añadida por JS tras el reveal */
-.module.digi .face.top   {{ background: var(--digi-top,  #ffffff) !important; }}
-.module.digi .face.front {{ background: var(--digi-side, #c8d8c0) !important; }}
-.module.digi .face.right {{ background: var(--digi-side, #c8d8c0) !important; }}
-.module.digi .face.left  {{ background: var(--digi-side, #c8d8c0) !important; }}
-.module.digi .face.back  {{ background: var(--digi-side, #c8d8c0) !important; }}
+.module.digi .face.top   {{ background: var(--digi-top,  #f0fff0) !important; }}
+.module.digi .face.front {{ background: var(--digi-side, #f0f0f0) !important; }}
+.module.digi .face.right {{ background: var(--digi-side, #f0f0f0) !important; }}
+.module.digi .face.left  {{ background: var(--digi-side, #f0f0f0) !important; }}
+.module.digi .face.back  {{ background: var(--digi-side, #f0f0f0) !important; }}
 
-/* Rings: misma lógica */
+/* Rings: solo laterales (top/bottom usan el color base) */
 .pulse-ring .face {{
   transition: background-color 1.4s ease-out;
 }}
-.pulse-ring.digi .face.top    {{ background: var(--digi-top,  #ffffff) !important; }}
-.pulse-ring.digi .face.bottom {{ background: var(--digi-top,  #ffffff) !important; }}
-.pulse-ring.digi .face.front  {{ background: var(--digi-side, #c8d8c0) !important; }}
-.pulse-ring.digi .face.right  {{ background: var(--digi-side, #c8d8c0) !important; }}
-.pulse-ring.digi .face.left   {{ background: var(--digi-side, #c8d8c0) !important; }}
-.pulse-ring.digi .face.back   {{ background: var(--digi-side, #c8d8c0) !important; }}
+.pulse-ring.digi .face.front {{ background: var(--digi-side, #f0f0f0) !important; }}
+.pulse-ring.digi .face.right {{ background: var(--digi-side, #f0f0f0) !important; }}
+.pulse-ring.digi .face.left  {{ background: var(--digi-side, #f0f0f0) !important; }}
+.pulse-ring.digi .face.back  {{ background: var(--digi-side, #f0f0f0) !important; }}
 
 /* BOTTOM — cara inferior de los ring cubes */
 .face.bottom {{
@@ -681,46 +700,59 @@ body {{
 
   const CASCADE = "--h .55s cubic-bezier(.34,1.56,.64,1), --bot .55s cubic-bezier(.34,1.56,.64,1)";
 
+  function applyDigiSide(toF2) {{
+    // Snap instantaneo del color lateral según frame
+    const key = toF2 ? "digiSideF2" : "digiSideF1";
+    modules.forEach(m => {{
+      if (!m.dataset.digiSideF1) return;
+      m.style.setProperty("--digi-side", m.dataset[key]);
+    }});
+    rings.forEach(r => {{
+      if (!r.dataset.digiSideF1) return;
+      r.style.setProperty("--digi-side", r.dataset[key]);
+    }});
+  }}
+
   function setFrame(toF2) {{
     frame2 = toF2;
     modules.forEach(m => {{
-      m.style.transition      = "none";   // snap puro — sin CSS que pelee
+      m.style.transition      = "none";
       m.style.transitionDelay = "0ms";
       m.style.setProperty("--h", (toF2 ? m.dataset.f2h : m.dataset.target) + "px");
     }});
     rings.forEach(r => r.classList.toggle("visible", toF2));
+    if (eggVisible) applyDigiSide(toF2);  // snap color lateral
   }}
 
   function revealEgg() {{
     modules.forEach(m => {{
-      m.style.transition      = CASCADE;              // cascade activo solo al revelar
+      m.style.transition      = CASCADE;
       m.style.transitionDelay = m.dataset.upDelay + "ms";
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
     }});
-    // Colorize módulos: stagger row-by-row después del cascade
+    // Colorize top + laterales F1 — stagger row-by-row
     modules.forEach((m, i) => {{
-      if (!m.dataset.digiTop) return;
+      if (!m.dataset.digiSideF1) return;
       const row   = Math.floor(i / 21);
       const delay = 900 + row * 60;
       setTimeout(() => {{
         m.style.setProperty("--digi-top",  m.dataset.digiTop);
-        m.style.setProperty("--digi-side", m.dataset.digiSide);
+        m.style.setProperty("--digi-side", m.dataset.digiSideF1);
         m.classList.add("digi");
       }}, delay);
     }});
-    // Colorize rings
+    // Rings — color lateral F1
     rings.forEach(r => {{
-      if (!r.dataset.digiTop) return;
-      r.style.setProperty("--digi-top",  r.dataset.digiTop);
-      r.style.setProperty("--digi-side", r.dataset.digiSide);
+      if (!r.dataset.digiSideF1) return;
+      r.style.setProperty("--digi-side", r.dataset.digiSideF1);
       r.classList.add("digi");
     }});
   }}
 
   function hideEgg() {{
     modules.forEach(m => {{
-      m.style.transition      = CASCADE;              // cascade activo solo al ocultar
+      m.style.transition      = CASCADE;
       m.style.transitionDelay = m.dataset.downDelay + "ms";
       m.style.setProperty("--h",   BASE + "px");
       m.style.setProperty("--bot", "0px");
