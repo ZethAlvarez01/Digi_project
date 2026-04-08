@@ -69,6 +69,59 @@ _EGG_DEFAULT   = (12, 0)   # d≥4
 _EGG_MAX_TOP   = 12        # top absoluto máximo en cubos (sin lift)
 EGG_LIFT       = 3         # cubos extra que eleva todo el huevo sobre el QR
 
+# Niveles que EXPANDEN en Frame 2 (nivel, f1_size, f2_size, z_desde_abajo)
+# nivel 12 = z=0 (base), nivel 1 = z=11 (cima)
+EXPANDING_LEVELS: list[tuple[int, int, int, int]] = [
+    (12, 6,  10, 0),
+    (11, 8,  12, 1),
+    (10, 10, 14, 2),
+    (9,  12, 14, 3),
+    (8,  12, 14, 4),
+]
+
+
+def get_ring_delta(f1: int, f2: int) -> list[tuple[int, int]]:
+    """Celdas en egg-coords que están en f2 pero NO en f1 (centrado en 12×12)."""
+    f1_off = (EGG_N - f1) // 2          # puede ser negativo si f2>EGG_N
+    f2_off = (EGG_N - f2) // 2
+    f1_cells = {
+        (r, c)
+        for r in range(f1_off, f1_off + f1)
+        for c in range(f1_off, f1_off + f1)
+    }
+    return [
+        (r, c)
+        for r in range(f2_off, f2_off + f2)
+        for c in range(f2_off, f2_off + f2)
+        if (r, c) not in f1_cells
+    ]
+
+
+def egg_to_board_px(er: int, ec: int) -> tuple[int, int]:
+    """Convierte coords egg (pueden ser negativas) a px en el board."""
+    return (ec + EGG_OFF) * CUBE_S, (er + EGG_OFF) * CUBE_S  # x, y
+
+
+def build_pulse_rings_html() -> str:
+    """Genera divs de anillo de expansión. Empiezan con --h:0px (invisibles)."""
+    parts: list[str] = []
+    for _nivel, f1, f2, z_idx in EXPANDING_LEVELS:
+        bot_px = (z_idx + EGG_LIFT) * CUBE_H   # posición Z fija
+        for er, ec in get_ring_delta(f1, f2):
+            x, y = egg_to_board_px(er, ec)
+            parts.append(
+                f'<div class="pulse-ring" '
+                f'style="left:{x}px;top:{y}px;transform:translateZ({bot_px}px);" '
+                f'data-ring-h="{CUBE_H}">'
+                '<div class="face top"></div>'
+                '<div class="face front"></div>'
+                '<div class="face right"></div>'
+                '<div class="face left"></div>'
+                '<div class="face back"></div>'
+                '</div>'
+            )
+    return "\n".join(parts)
+
 
 def compute_egg_heights() -> list[list[tuple[int, int]]]:
     """Devuelve matrix 12×12 con (col_h, bot) en cubos para cada celda."""
@@ -331,6 +384,21 @@ body {{
 .module.inactive .face.right {{ background: linear-gradient(to right,  {i_right} 0%, #c8b8e8 100%); }}
 .module.inactive .face.left  {{ background: linear-gradient(to left,   {i_left}  0%, #c0b0e0 100%); }}
 .module.inactive .face.back  {{ background: linear-gradient(to top,    {i_back}  0%, #c8b8e8 100%); }}
+
+/* ---- Anillos de expansión (pulse rings) ---- */
+.pulse-ring {{
+  position: absolute;
+  width: {cube_s}px;
+  height: {cube_s}px;
+  transform-style: preserve-3d;
+  overflow: visible;
+  transition: --h .4s ease-out;
+}}
+.pulse-ring .face.top   {{ background: {a_top}; }}
+.pulse-ring .face.front {{ background: linear-gradient(to bottom, {a_front} 0%, #0a0019 100%); }}
+.pulse-ring .face.right {{ background: linear-gradient(to right,  {a_right} 0%, #0a0019 100%); }}
+.pulse-ring .face.left  {{ background: linear-gradient(to left,   {a_left}  0%, #0a0019 100%); }}
+.pulse-ring .face.back  {{ background: linear-gradient(to top,    {a_back}  0%, #0a0019 100%); }}
 </style>
 </head>
 <body>
@@ -340,6 +408,7 @@ body {{
     <div class="board-frame">
       <div class="board" id="board">
 {modules_html}
+{pulse_rings_html}
       </div>
     </div>
   </div>
@@ -437,6 +506,7 @@ body {{
 (function() {{
   const btn     = document.getElementById("btn");
   const modules = document.querySelectorAll(".module");
+  const rings   = document.querySelectorAll(".pulse-ring");
   const BASE    = {base_h};
   let eggVisible = false;
 
@@ -448,6 +518,13 @@ body {{
       m.style.transitionDelay = delay + "ms";
       m.style.setProperty("--h",   newH   + "px");
       m.style.setProperty("--bot", newBot + "px");
+    }});
+    rings.forEach(r => {{
+      // los rings aparecen tras el reveal principal (delay 600ms al subir)
+      r.style.transition = toEgg
+        ? "--h .4s ease-out 600ms"
+        : "--h .25s ease-in";
+      r.style.setProperty("--h", toEgg ? r.dataset.ringH + "px" : "0px");
     }});
   }}
 
@@ -483,12 +560,14 @@ def generate_qr_html(data: str = "Hola Zeth!", output: str = "qr_3d.html") -> Pa
     matrix = qr.get_matrix()
     n = len(matrix)
 
-    egg       = compute_egg_heights()
-    modules   = build_modules_html(matrix, n, egg)
-    board_px  = n * CUBE_S
+    egg        = compute_egg_heights()
+    modules    = build_modules_html(matrix, n, egg)
+    rings      = build_pulse_rings_html()
+    board_px   = n * CUBE_S
 
     html = HTML_TEMPLATE.format(
         modules_html=modules,
+        pulse_rings_html=rings,
         board_px=board_px,
         cube_s=CUBE_S,
         base_h=BASE_H,
