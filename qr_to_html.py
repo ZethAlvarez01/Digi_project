@@ -103,22 +103,33 @@ def egg_to_board_px(er: int, ec: int) -> tuple[int, int]:
 
 
 def build_pulse_rings_html() -> str:
-    """Genera divs de anillo de expansión. Empiezan con --h:0px (invisibles)."""
+    """Genera divs de anillo de expansión. Invisibles (opacity:0) hasta reveal.
+    Solo renderiza las caras visibles de cada celda (top + perimetro exterior).
+    """
     parts: list[str] = []
     for _nivel, f1, f2, z_idx in EXPANDING_LEVELS:
-        bot_px = (z_idx + EGG_LIFT) * CUBE_H   # posición Z fija
-        for er, ec in get_ring_delta(f1, f2):
+        bot_px   = (z_idx + EGG_LIFT) * CUBE_H
+        delta    = get_ring_delta(f1, f2)
+        delta_set = set(delta)
+
+        for er, ec in delta:
             x, y = egg_to_board_px(er, ec)
+            # Caras: top siempre; laterales solo si el vecino NO está en el delta
+            faces = '<div class="face top"></div>'
+            if (er - 1, ec) not in delta_set:  # back (vecino arriba ausente)
+                faces += '<div class="face back"></div>'
+            if (er + 1, ec) not in delta_set:  # front
+                faces += '<div class="face front"></div>'
+            if (er, ec - 1) not in delta_set:  # left
+                faces += '<div class="face left"></div>'
+            if (er, ec + 1) not in delta_set:  # right
+                faces += '<div class="face right"></div>'
+
             parts.append(
                 f'<div class="pulse-ring" '
-                f'style="left:{x}px;top:{y}px;transform:translateZ({bot_px}px);" '
-                f'data-ring-h="{CUBE_H}">'
-                '<div class="face top"></div>'
-                '<div class="face front"></div>'
-                '<div class="face right"></div>'
-                '<div class="face left"></div>'
-                '<div class="face back"></div>'
-                '</div>'
+                f'style="left:{x}px;top:{y}px;'
+                f'transform:translateZ({bot_px}px);" >'
+                f'{faces}</div>'
             )
     return "\n".join(parts)
 
@@ -392,7 +403,9 @@ body {{
   height: {cube_s}px;
   transform-style: preserve-3d;
   overflow: visible;
-  transition: --h .4s ease-out;
+  opacity: 0;                        /* invisible hasta reveal */
+  will-change: transform, opacity;
+  transition: opacity .35s ease-out;
 }}
 .pulse-ring .face.top   {{ background: {a_top}; }}
 .pulse-ring .face.front {{ background: linear-gradient(to bottom, {a_front} 0%, #0a0019 100%); }}
@@ -509,8 +522,9 @@ body {{
   const rings   = document.querySelectorAll(".pulse-ring");
   const BASE    = {base_h};
   let eggVisible = false;
+  let ringTimer  = null;
 
-  function setHeights(toEgg) {{
+  function setModules(toEgg) {{
     modules.forEach(m => {{
       const delay  = toEgg ? m.dataset.upDelay : m.dataset.downDelay;
       const newH   = toEgg ? parseInt(m.dataset.target) : BASE;
@@ -519,18 +533,31 @@ body {{
       m.style.setProperty("--h",   newH   + "px");
       m.style.setProperty("--bot", newBot + "px");
     }});
+  }}
+
+  function showRings() {{
     rings.forEach(r => {{
-      // los rings aparecen tras el reveal principal (delay 600ms al subir)
-      r.style.transition = toEgg
-        ? "--h .4s ease-out 600ms"
-        : "--h .25s ease-in";
-      r.style.setProperty("--h", toEgg ? r.dataset.ringH + "px" : "0px");
+      r.style.transition = "opacity .35s ease-out";
+      r.style.opacity = "1";
+    }});
+  }}
+
+  function hideRings() {{
+    clearTimeout(ringTimer);
+    rings.forEach(r => {{
+      r.style.transition = "opacity .2s ease-in";
+      r.style.opacity = "0";
     }});
   }}
 
   btn.addEventListener("click", () => {{
     eggVisible = !eggVisible;
-    setHeights(eggVisible);
+    setModules(eggVisible);
+    if (eggVisible) {{
+      ringTimer = setTimeout(showRings, 600);
+    }} else {{
+      hideRings();
+    }}
     btn.textContent = eggVisible ? "🔄 Reset QR" : "🥚 Reveal Egg";
     btn.style.boxShadow = eggVisible
       ? "0 0 22px 8px {glow1}"
