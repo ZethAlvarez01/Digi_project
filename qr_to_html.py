@@ -462,7 +462,7 @@ body {{
 
 /* Rings: misma lógica */
 .pulse-ring .face {{
-  transition: background-color 1.4s ease-out, opacity .35s ease-out;
+  transition: background-color 1.4s ease-out;
 }}
 .pulse-ring.digi .face.top    {{ background: var(--digi-top,  #ffffff) !important; }}
 .pulse-ring.digi .face.bottom {{ background: var(--digi-top,  #ffffff) !important; }}
@@ -542,10 +542,9 @@ body {{
   transform-style: preserve-3d;
   overflow: visible;
 }}
-/* Faces invisibles al inicio; opacity en hijo para no romper preserve-3d */
+/* Faces invisibles al inicio; snap instantaneo — sin fade */
 .pulse-ring .face {{
   opacity: 0;
-  transition: opacity .3s ease-out;
 }}
 .pulse-ring.visible .face {{
   opacity: 1;
