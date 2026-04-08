@@ -74,8 +74,8 @@ _EGG_F2_RED: dict[int, int] = {
     1: 1,   # nivel 4 desaparece del top de d=1
     2: 1,   # nivel 3
     3: 2,   # niveles 2 y 3
-    4: 1,   # nivel 1
-    5: 1,
+    4: 2,   # niveles 1 y 2  ← fix: nivel 11 no existe en Frame 2
+    5: 2,   # mismo
 }
 
 # Niveles que EXPANDEN en Frame 2 (nivel, f1_size, f2_size, z_desde_abajo)
@@ -123,8 +123,9 @@ def build_pulse_rings_html() -> str:
 
         for er, ec in delta:
             x, y = egg_to_board_px(er, ec)
-            # Caras: top siempre; laterales solo si el vecino NO está en el delta
-            faces = '<div class="face top"></div>'
+            # Caras: top siempre; bottom siempre (visible al mirar desde abajo);
+            # laterales solo si el vecino NO está en el delta
+            faces = '<div class="face top"></div><div class="face bottom"></div>'
             if (er - 1, ec) not in delta_set:  # back (vecino arriba ausente)
                 faces += '<div class="face back"></div>'
             if (er + 1, ec) not in delta_set:  # front
@@ -241,7 +242,7 @@ HTML_TEMPLATE = """\
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
 body {{
-  background: #080010;
+  background: #1a3a20;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -359,6 +360,16 @@ body {{
   height: {cube_s}px;
   top: 0; left: 0;
   transform: translateZ(var(--h));
+  outline: 1px solid rgba(0,0,0,0.5);  /* borde debug */
+}}
+
+/* BOTTOM — cara inferior de los ring cubes */
+.face.bottom {{
+  width: {cube_s}px;
+  height: {cube_s}px;
+  top: 0; left: 0;
+  transform: rotateX(180deg);  /* gira para mirar hacia -Z */
+  background: #880066;
 }}
 
 /* FRONT — pivota en el borde inferior del módulo, altura = var(--h) */
@@ -432,11 +443,12 @@ body {{
 .pulse-ring.visible .face {{
   opacity: 1;
 }}
-.pulse-ring .face.top   {{ background: #ff00cc; }}
-.pulse-ring .face.front {{ background: linear-gradient(to bottom, #cc0099 0%, #660044 100%); }}
-.pulse-ring .face.right {{ background: linear-gradient(to right,  #aa0088 0%, #550033 100%); }}
-.pulse-ring .face.left  {{ background: linear-gradient(to left,   #aa0088 0%, #550033 100%); }}
-.pulse-ring .face.back  {{ background: linear-gradient(to top,    #cc0099 0%, #660044 100%); }}
+.pulse-ring .face.top    {{ background: #ff00cc; }}
+.pulse-ring .face.bottom {{ background: #aa0088; }}
+.pulse-ring .face.front  {{ background: linear-gradient(to bottom, #cc0099 0%, #660044 100%); }}
+.pulse-ring .face.right  {{ background: linear-gradient(to right,  #aa0088 0%, #550033 100%); }}
+.pulse-ring .face.left   {{ background: linear-gradient(to left,   #aa0088 0%, #550033 100%); }}
+.pulse-ring .face.back   {{ background: linear-gradient(to top,    #cc0099 0%, #660044 100%); }}
 </style>
 </head>
 <body>
