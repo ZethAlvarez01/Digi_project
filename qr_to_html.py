@@ -24,19 +24,27 @@ import qrcode
 #   style 3 ("G" motitas)      → #92D050
 #   style 4 ("N" espiral)      → #1a1a3a
 
+# Colores de cara lateral  (del dump Excel: fill[2]=92D050=VERDE, fill[3]=theme=BLANCO)
+# style 1,4 → no-fill / borde (fuera del huevo)
+# style 2,5 → #92D050 verde  (fill solid)
+# style 3,6 → #ffffff blanco (fill theme)
 _DIGI_COLOR: dict[int, str] = {
-    1: "#f0f0f0",   # transparente/esquina
-    2: "#ffffff",   # cuerpo blanco
-    3: "#92d050",   # motita verde
-    4: "#1a1a3a",   # espiral/navy oscuro
+    1: "#f0f0f0",   # fuera del huevo
+    2: "#92d050",   # VERDE  ← fill[2] = FF92D050
+    3: "#ffffff",   # BLANCO ← fill[3] = theme"2"
+    4: "#f0f0f0",   # fuera (variante frame2)
+    5: "#92d050",   # VERDE  (bold, frame2)
+    6: "#ffffff",   # BLANCO (bold, frame2)
 }
 
-# Ligeramente más oscuro para cara superior (da profundidad)
+# Cara superior: tono ligeramente más oscuro para dar profundidad
 _DIGI_TOP_MOD: dict[int, str] = {
     1: "#e0e0e0",
-    2: "#f0fff0",
-    3: "#7ab840",
-    4: "#0d0d20",
+    2: "#7ab840",   # verde oscuro (top del cubo verde)
+    3: "#f0fff0",   # blanco con leve tinte verde (top del cubo blanco)
+    4: "#e0e0e0",
+    5: "#7ab840",
+    6: "#f0fff0",
 }
 
 
