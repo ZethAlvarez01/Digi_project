@@ -695,12 +695,12 @@ body {{
 
   function revealEgg() {{
     modules.forEach(m => {{
-      m.style.transition      = "none";   // snap instantaneo en altura
-      m.style.transitionDelay = "0ms";
+      m.style.transition = "";                        // restaura CSS transition → cascade
+      m.style.transitionDelay = m.dataset.upDelay + "ms";
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
     }});
-    // Colorize módulos: stagger row-by-row después del snap
+    // Colorize módulos: stagger row-by-row después del cascade
     modules.forEach((m, i) => {{
       if (!m.dataset.digiTop) return;
       const row   = Math.floor(i / 21);
@@ -722,13 +722,13 @@ body {{
 
   function hideEgg() {{
     modules.forEach(m => {{
-      m.style.transition = "";            // restaura CSS transition para la cascada
+      m.style.transition = "";                        // restaura CSS transition → cascade
       m.style.transitionDelay = m.dataset.downDelay + "ms";
       m.style.setProperty("--h",   BASE + "px");
       m.style.setProperty("--bot", "0px");
-      m.classList.remove("digi");        // quita colores Digi
+      m.classList.remove("digi");
     }});
-    rings.forEach(r => r.classList.remove("digi"));  // quita colores de rings
+    rings.forEach(r => r.classList.remove("digi"));
   }}
 
   btn.addEventListener("click", () => {{
