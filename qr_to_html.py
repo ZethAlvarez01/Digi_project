@@ -8,10 +8,56 @@ El CSS Houdini @property --h hace que la custom property sea animable
 con transition, así todas las caras del cubo se ajustan al mismo tiempo.
 """
 
+import re
 import webbrowser
+import zipfile
 from pathlib import Path
 
 import qrcode
+
+# ---------------------------------------------------------------------------
+# Colores Digi-Egg desde huevo_color.xlsx
+# ---------------------------------------------------------------------------
+# Paleta confirmada del xlsx:
+#   style 1 ("." transparente) → blanco (esquinas)
+#   style 2 ("W" cuerpo)       → #FFFFFF
+#   style 3 ("G" motitas)      → #92D050
+#   style 4 ("N" espiral)      → #1a1a3a
+
+_DIGI_TOP: dict[int, str] = {
+    1: "#ffffff",   # transparente → blanco
+    2: "#ffffff",   # cuerpo
+    3: "#92d050",   # motita verde
+    4: "#1a1a3a",   # espiral oscura
+}
+_DIGI_SIDE: dict[int, str] = {
+    1: "#c8d8c0",
+    2: "#c8d8c0",   # blanco lateral (sombra fría)
+    3: "#4a8010",   # verde oscuro lateral
+    4: "#0d0d20",   # navy profundo lateral
+}
+
+
+def load_digi_grid(path: str = "huevo_color.xlsx") -> list[list[int]] | None:
+    """Lee el xlsx y devuelve matriz 12×12 de style-index (1-4).
+    Retorna None si el archivo no existe.
+    """
+    p = Path(path)
+    if not p.exists():
+        return None
+    with zipfile.ZipFile(p) as z:
+        styles_xml = z.read("xl/styles.xml").decode("utf-8")
+        sheet_xml  = z.read("xl/worksheets/sheet1.xml").decode("utf-8")
+    # parsear celdas: {(col_letter, row_int): style_idx}
+    cell_styles: dict[tuple[str, int], int] = {}
+    for m in re.finditer(r'<c r="([A-Z]+)(\d+)"[^>]*s="(\d+)"', sheet_xml):
+        cell_styles[(m.group(1), int(m.group(2)))] = int(m.group(3))
+    # egg: filas 5-16, cols F-Q  (12×12)
+    COLS = list("FGHIJKLMNOPQ")
+    grid = []
+    for row in range(5, 17):
+        grid.append([cell_styles.get((col, row), 1) for col in COLS])
+    return grid
 
 # ---------------------------------------------------------------------------
 # Constantes visuales
@@ -193,7 +239,8 @@ def get_egg_targets(qr_r: int, qr_c: int,
 # ---------------------------------------------------------------------------
 
 def build_modules_html(matrix: list[list[bool]], n: int,
-                        egg: list[list[tuple[int, int]]]) -> str:
+                        egg: list[list[tuple[int, int]]],
+                        digi: list[list[int]] | None = None) -> str:
     """Renderiza los 441 módulos QR con data-target, data-bot y stagger."""
     parts: list[str] = []
     max_top_px = (_EGG_MAX_TOP + EGG_LIFT) * CUBE_H   # 390 px
@@ -219,6 +266,14 @@ def build_modules_html(matrix: list[list[bool]], n: int,
             up_delay   = round((1 - top_px / max_top_px) * 420)
             down_delay = round((top_px / max_top_px) * 420)
 
+            # Colores Digi-Egg (solo celdas dentro del huevo)
+            digi_attrs = ""
+            if digi is not None and 0 <= er < EGG_N and 0 <= ec < EGG_N:
+                style_idx  = digi[er][ec]
+                digi_top   = _DIGI_TOP.get(style_idx, "#ffffff")
+                digi_side  = _DIGI_SIDE.get(style_idx, "#c8d8c0")
+                digi_attrs = f'data-digi-top="{digi_top}" data-digi-side="{digi_side}" '
+
             parts.append(
                 f'<div class="module {cls}" '
                 f'style="left:{x}px;top:{y}px;" '
@@ -226,7 +281,8 @@ def build_modules_html(matrix: list[list[bool]], n: int,
                 f'data-bot="{bot_px}" '
                 f'data-f2h="{f2h_px}" '
                 f'data-up-delay="{up_delay}" '
-                f'data-down-delay="{down_delay}">'
+                f'data-down-delay="{down_delay}" '
+                f'{digi_attrs}>'
                 '<div class="face top"></div>'
                 '<div class="face front"></div>'
                 '<div class="face right"></div>'
@@ -381,7 +437,24 @@ body {{
   height: {cube_s}px;
   top: 0; left: 0;
   transform: translateZ(var(--h));
+  outline: 1px solid rgba(0,0,0,0.5);
+  transition: background-color 1.4s ease-out;
 }}
+
+/* Caras laterales: transición de color */
+.module .face.front,
+.module .face.right,
+.module .face.left,
+.module .face.back {{
+  transition: background-color 1.4s ease-out;
+}}
+
+/* Digi-Egg colorized — clase .digi añadida por JS tras el reveal */
+.module.digi .face.top   {{ background: var(--digi-top,  #ffffff) !important; }}
+.module.digi .face.front {{ background: var(--digi-side, #c8d8c0) !important; }}
+.module.digi .face.right {{ background: var(--digi-side, #c8d8c0) !important; }}
+.module.digi .face.left  {{ background: var(--digi-side, #c8d8c0) !important; }}
+.module.digi .face.back  {{ background: var(--digi-side, #c8d8c0) !important; }}
 
 /* BOTTOM — cara inferior de los ring cubes */
 .face.bottom {{
@@ -612,6 +685,17 @@ body {{
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
     }});
+    // Colorize Digi-Egg: stagger row-by-row después de que suba
+    modules.forEach((m, i) => {{
+      if (!m.dataset.digiTop) return;
+      const row   = Math.floor(i / 21);
+      const delay = 900 + row * 60;   // empieza a 900ms, cae de arriba a abajo
+      setTimeout(() => {{
+        m.style.setProperty("--digi-top",  m.dataset.digiTop);
+        m.style.setProperty("--digi-side", m.dataset.digiSide);
+        m.classList.add("digi");
+      }}, delay);
+    }});
   }}
 
   function hideEgg() {{
@@ -620,6 +704,7 @@ body {{
       m.style.transitionDelay = m.dataset.downDelay + "ms";
       m.style.setProperty("--h",   BASE + "px");
       m.style.setProperty("--bot", "0px");
+      m.classList.remove("digi");        // quita colores Digi
     }});
   }}
 
@@ -665,7 +750,8 @@ def generate_qr_html(data: str = "Hola Zeth!", output: str = "qr_3d.html") -> Pa
     n = len(matrix)
 
     egg        = compute_egg_heights()
-    modules    = build_modules_html(matrix, n, egg)
+    digi       = load_digi_grid()
+    modules    = build_modules_html(matrix, n, egg, digi)
     rings      = build_pulse_rings_html(matrix, n)
     board_px   = n * CUBE_S
 
