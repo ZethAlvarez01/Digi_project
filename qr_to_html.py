@@ -403,15 +403,21 @@ body {{
   height: {cube_s}px;
   transform-style: preserve-3d;
   overflow: visible;
-  opacity: 0;                        /* invisible hasta reveal */
-  will-change: transform, opacity;
+}}
+/* Las faces empiezan invisibles — opacity en el hijo, NO en el padre          */
+/* (opacity en el padre rompe preserve-3d en Chrome)                           */
+.pulse-ring .face {{
+  opacity: 0;
   transition: opacity .35s ease-out;
 }}
-.pulse-ring .face.top   {{ background: {a_top}; }}
-.pulse-ring .face.front {{ background: linear-gradient(to bottom, {a_front} 0%, #0a0019 100%); }}
-.pulse-ring .face.right {{ background: linear-gradient(to right,  {a_right} 0%, #0a0019 100%); }}
-.pulse-ring .face.left  {{ background: linear-gradient(to left,   {a_left}  0%, #0a0019 100%); }}
-.pulse-ring .face.back  {{ background: linear-gradient(to top,    {a_back}  0%, #0a0019 100%); }}
+.pulse-ring.visible .face {{
+  opacity: 1;
+}}
+.pulse-ring .face.top   {{ background: #ff00cc; }}
+.pulse-ring .face.front {{ background: linear-gradient(to bottom, #cc0099 0%, #660044 100%); }}
+.pulse-ring .face.right {{ background: linear-gradient(to right,  #aa0088 0%, #550033 100%); }}
+.pulse-ring .face.left  {{ background: linear-gradient(to left,   #aa0088 0%, #550033 100%); }}
+.pulse-ring .face.back  {{ background: linear-gradient(to top,    #cc0099 0%, #660044 100%); }}
 </style>
 </head>
 <body>
@@ -536,18 +542,12 @@ body {{
   }}
 
   function showRings() {{
-    rings.forEach(r => {{
-      r.style.transition = "opacity .35s ease-out";
-      r.style.opacity = "1";
-    }});
+    rings.forEach(r => r.classList.add("visible"));
   }}
 
   function hideRings() {{
     clearTimeout(ringTimer);
-    rings.forEach(r => {{
-      r.style.transition = "opacity .2s ease-in";
-      r.style.opacity = "0";
-    }});
+    rings.forEach(r => r.classList.remove("visible"));
   }}
 
   btn.addEventListener("click", () => {{
