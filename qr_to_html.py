@@ -40,6 +40,29 @@ _DIGI_TOP_MOD: dict[int, str] = {
 }
 
 
+def make_lateral_stops(col_h: int, bot: int,
+                        grid: list[list[int]], ec: int) -> str:
+    """Genera string de colores pipe-separados para la cara lateral.
+
+    El mapping Z ↔ er es:
+        CSS top de la cara  (y=0, Z más bajo)  → er = 11 - bot
+        CSS y = i*CUBE_H                         → er = 11 - bot - i
+        CSS bottom          (Z más alto)        → er = 12 - bot - col_h
+
+    CSS top aparece más abajo en pantalla (isométrico 60°),
+    CSS bottom aparece más arriba → gradiente de bottom de huevo a top.
+    """
+    stops: list[str] = []
+    for i in range(col_h):
+        er = 11 - bot - i
+        if 0 <= er < EGG_N:
+            color = _DIGI_COLOR.get(grid[er][ec], "#f0f0f0")
+        else:
+            color = "#f0f0f0"
+        stops.append(color)
+    return "|".join(stops)
+
+
 def load_digi_grid(path: str = "huevo_color.xlsx") -> tuple[list[list[int]], list[list[int]]] | None:
     """Lee el xlsx y devuelve (grid_f1, grid_f2): dos matrices 12×12 de style-index.
     hoja1=frame1 (laterales F1), hoja2=frame2 (laterales F2).
@@ -286,18 +309,21 @@ def build_modules_html(matrix: list[list[bool]], n: int,
             up_delay   = round((1 - top_px / max_top_px) * 420)
             down_delay = round((top_px / max_top_px) * 420)
 
-            # Colores Digi-Egg (solo celdas dentro del huevo)
+            # Colores Digi-Egg (gradientes por nivel Z, solo celdas del egg)
             digi_attrs = ""
             if grid_f1 is not None and 0 <= er < EGG_N and 0 <= ec < EGG_N:
-                sf1 = grid_f1[er][ec]
-                sf2 = grid_f2[er][ec] if grid_f2 else sf1
+                sf1          = grid_f1[er][ec]
                 digi_top     = _DIGI_TOP_MOD.get(sf1, "#e0e0e0")
-                digi_side_f1 = _DIGI_COLOR.get(sf1, "#f0f0f0")
-                digi_side_f2 = _DIGI_COLOR.get(sf2, "#f0f0f0")
+                # col_h y bot en unidades CUBE_H, sin el lift
+                col_h_u = col_h_px // CUBE_H
+                bot_u   = (bot_px - EGG_LIFT * CUBE_H) // CUBE_H
+                f2h_u   = f2h_px  // CUBE_H
+                stops_f1 = make_lateral_stops(col_h_u, bot_u, grid_f1, ec)
+                stops_f2 = make_lateral_stops(f2h_u,   bot_u, grid_f2 or grid_f1, ec)
                 digi_attrs = (
                     f'data-digi-top="{digi_top}" '
-                    f'data-digi-side-f1="{digi_side_f1}" '
-                    f'data-digi-side-f2="{digi_side_f2}" '
+                    f'data-digi-stops-f1="{stops_f1}" '
+                    f'data-digi-stops-f2="{stops_f2}" '
                 )
 
             parts.append(
@@ -475,20 +501,20 @@ body {{
 }}
 
 /* Digi-Egg colorized — clase .digi añadida por JS tras el reveal */
-.module.digi .face.top   {{ background: var(--digi-top,  #f0fff0) !important; }}
-.module.digi .face.front {{ background: var(--digi-side, #f0f0f0) !important; }}
-.module.digi .face.right {{ background: var(--digi-side, #f0f0f0) !important; }}
-.module.digi .face.left  {{ background: var(--digi-side, #f0f0f0) !important; }}
-.module.digi .face.back  {{ background: var(--digi-side, #f0f0f0) !important; }}
+.module.digi .face.top   {{ background: var(--digi-top,   #f0fff0) !important; }}
+.module.digi .face.front {{ background: var(--digi-front, #f0f0f0) !important; }}
+.module.digi .face.right {{ background: var(--digi-right, #f0f0f0) !important; }}
+.module.digi .face.left  {{ background: var(--digi-left,  #f0f0f0) !important; }}
+.module.digi .face.back  {{ background: var(--digi-back,  #f0f0f0) !important; }}
 
-/* Rings: solo laterales (top/bottom usan el color base) */
+/* Rings: solo laterales */
 .pulse-ring .face {{
   transition: background-color 1.4s ease-out;
 }}
-.pulse-ring.digi .face.front {{ background: var(--digi-side, #f0f0f0) !important; }}
-.pulse-ring.digi .face.right {{ background: var(--digi-side, #f0f0f0) !important; }}
-.pulse-ring.digi .face.left  {{ background: var(--digi-side, #f0f0f0) !important; }}
-.pulse-ring.digi .face.back  {{ background: var(--digi-side, #f0f0f0) !important; }}
+.pulse-ring.digi .face.front {{ background: var(--digi-front, #f0f0f0) !important; }}
+.pulse-ring.digi .face.right {{ background: var(--digi-right, #f0f0f0) !important; }}
+.pulse-ring.digi .face.left  {{ background: var(--digi-left,  #f0f0f0) !important; }}
+.pulse-ring.digi .face.back  {{ background: var(--digi-back,  #f0f0f0) !important; }}
 
 /* BOTTOM — cara inferior de los ring cubes */
 .face.bottom {{
@@ -698,19 +724,37 @@ body {{
   let frame2     = false;   // false = Frame1, true = Frame2
   let timer      = null;
 
-  const CASCADE = "--h .55s cubic-bezier(.34,1.56,.64,1), --bot .55s cubic-bezier(.34,1.56,.64,1)";
+  const CASCADE   = "--h .55s cubic-bezier(.34,1.56,.64,1), --bot .55s cubic-bezier(.34,1.56,.64,1)";
+  const CUBE_H_JS = {cube_h};  // px por nivel Z — sync con Python
+
+  // Construye los 4 gradientes para las caras laterales a partir de
+  // un array de colores [er=11-bot … er=12-bot-col_h] (CSS top→bottom)
+  function buildGrads(stops) {{
+    const h   = CUBE_H_JS;
+    const seg = stops.map((c, i) => `${{c}} ${{i * h}}px ${{(i + 1) * h}}px`).join(',');
+    return {{
+      front: `linear-gradient(to bottom,${{seg}})`,  // CSS top→bottom = low Z → high Z
+      right: `linear-gradient(to right,${{seg}})`,   // same horizontal
+      left:  `linear-gradient(to left,${{seg}})`,    // mirrored
+      back:  `linear-gradient(to top,${{seg}})`,     // reversed (cara trasera)
+    }};
+  }}
+
+  function applyDigiGrads(m, toF2) {{
+    const attr  = toF2 ? "digiStopsF2" : "digiStopsF1";
+    const raw   = m.dataset[attr];
+    if (!raw) return;
+    const stops = raw.split("|");
+    const g     = buildGrads(stops);
+    m.style.setProperty("--digi-front", g.front);
+    m.style.setProperty("--digi-right", g.right);
+    m.style.setProperty("--digi-left",  g.left);
+    m.style.setProperty("--digi-back",  g.back);
+  }}
 
   function applyDigiSide(toF2) {{
-    // Snap instantaneo del color lateral según frame
-    const key = toF2 ? "digiSideF2" : "digiSideF1";
-    modules.forEach(m => {{
-      if (!m.dataset.digiSideF1) return;
-      m.style.setProperty("--digi-side", m.dataset[key]);
-    }});
-    rings.forEach(r => {{
-      if (!r.dataset.digiSideF1) return;
-      r.style.setProperty("--digi-side", r.dataset[key]);
-    }});
+    modules.forEach(m => applyDigiGrads(m, toF2));
+    // rings: color plano, ya tienen --digi-front del reveal
   }}
 
   function setFrame(toF2) {{
@@ -721,7 +765,7 @@ body {{
       m.style.setProperty("--h", (toF2 ? m.dataset.f2h : m.dataset.target) + "px");
     }});
     rings.forEach(r => r.classList.toggle("visible", toF2));
-    if (eggVisible) applyDigiSide(toF2);  // snap color lateral
+    if (eggVisible) applyDigiSide(toF2);
   }}
 
   function revealEgg() {{
@@ -731,21 +775,24 @@ body {{
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
     }});
-    // Colorize top + laterales F1 — stagger row-by-row
+    // Colorize: top color + gradientes laterales, stagger row-by-row
     modules.forEach((m, i) => {{
-      if (!m.dataset.digiSideF1) return;
+      if (!m.dataset.digiStopsF1) return;
       const row   = Math.floor(i / 21);
       const delay = 900 + row * 60;
       setTimeout(() => {{
-        m.style.setProperty("--digi-top",  m.dataset.digiTop);
-        m.style.setProperty("--digi-side", m.dataset.digiSideF1);
+        m.style.setProperty("--digi-top", m.dataset.digiTop);
+        applyDigiGrads(m, frame2);
         m.classList.add("digi");
       }}, delay);
     }});
-    // Rings — color lateral F1
+    // Rings: color plano (un solo nivel Z)
     rings.forEach(r => {{
       if (!r.dataset.digiSideF1) return;
-      r.style.setProperty("--digi-side", r.dataset.digiSideF1);
+      r.style.setProperty("--digi-front", r.dataset.digiSideF1);
+      r.style.setProperty("--digi-right", r.dataset.digiSideF1);
+      r.style.setProperty("--digi-left",  r.dataset.digiSideF1);
+      r.style.setProperty("--digi-back",  r.dataset.digiSideF1);
       r.classList.add("digi");
     }});
   }}
@@ -813,6 +860,7 @@ def generate_qr_html(data: str = "Hola Zeth!", output: str = "qr_3d.html") -> Pa
         pulse_rings_html=rings,
         board_px=board_px,
         cube_s=CUBE_S,
+        cube_h=CUBE_H,
         base_h=BASE_H,
         glow1=GLOW1, glow2=GLOW2,
         a_top=A_TOP, a_front=A_FRONT, a_right=A_RIGHT, a_left=A_LEFT, a_back=A_BACK,
