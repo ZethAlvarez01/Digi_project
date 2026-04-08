@@ -581,7 +581,7 @@ body {{
   wrapper.addEventListener("touchend", () => {{ dragging = false; }});
 }})();
 
-/* ---- Egg reveal + Auto-Pulse ---- */
+/* ---- Egg reveal + Pulse 1s ---- */
 (function() {{
   const btn     = document.getElementById("btn");
   const modules = document.querySelectorAll(".module");
@@ -589,63 +589,50 @@ body {{
   const BASE    = {base_h};
 
   let eggVisible = false;
-  let pulseOn    = false;
-  let autoTimer  = null;
-  let startTimer = null;
-  let ringTimer  = null;
+  let frame2     = false;   // false = Frame1, true = Frame2
+  let timer      = null;
 
-  const PULSE_MS = 2200;
-  const START_MS = 1600;
-
-  function setModules(toEgg) {{
-    modules.forEach(m => {{
-      const delay  = toEgg ? m.dataset.upDelay : m.dataset.downDelay;
-      const newH   = toEgg ? parseInt(m.dataset.target) : BASE;
-      const newBot = toEgg ? parseInt(m.dataset.bot)    : 0;
-      m.style.transitionDelay = delay + "ms";
-      m.style.setProperty("--h",   newH   + "px");
-      m.style.setProperty("--bot", newBot + "px");
-    }});
-  }}
-
-  function applyPulse(toF2) {{
-    pulseOn = toF2;
+  function setFrame(toF2) {{
+    frame2 = toF2;
     modules.forEach(m => {{
       m.style.transitionDelay = "0ms";
       m.style.setProperty("--h", (toF2 ? m.dataset.f2h : m.dataset.target) + "px");
     }});
+    rings.forEach(r => r.classList.toggle("visible", toF2));
   }}
 
-  function tick() {{ applyPulse(!pulseOn); }}
-
-  function startAutoPlay() {{
-    startTimer = setTimeout(() => {{
-      applyPulse(true);
-      autoTimer = setInterval(tick, PULSE_MS);
-    }}, START_MS);
+  function revealEgg() {{
+    modules.forEach(m => {{
+      const delay = m.dataset.upDelay;
+      m.style.transitionDelay = delay + "ms";
+      m.style.setProperty("--h",   m.dataset.target + "px");
+      m.style.setProperty("--bot", m.dataset.bot    + "px");
+    }});
   }}
 
-  function stopAutoPlay() {{
-    clearTimeout(startTimer);
-    clearInterval(autoTimer);
-    autoTimer = startTimer = null;
+  function hideEgg() {{
+    modules.forEach(m => {{
+      const delay = m.dataset.downDelay;
+      m.style.transitionDelay = delay + "ms";
+      m.style.setProperty("--h",   BASE + "px");
+      m.style.setProperty("--bot", "0px");
+    }});
   }}
-
-  function showRings() {{ rings.forEach(r => r.classList.add("visible")); }}
-  function hideRings() {{ clearTimeout(ringTimer); rings.forEach(r => r.classList.remove("visible")); }}
 
   btn.addEventListener("click", () => {{
     eggVisible = !eggVisible;
-    if (!eggVisible) {{
-      stopAutoPlay();
-      hideRings();
-      applyPulse(false);
-    }}
-    setModules(eggVisible);
+
     if (eggVisible) {{
-      ringTimer = setTimeout(showRings, 600);
-      startAutoPlay();
+      revealEgg();
+      // arranca el pulso al segundo, repite cada segundo
+      timer = setInterval(() => setFrame(!frame2), 1000);
+    }} else {{
+      clearInterval(timer);
+      timer = null;
+      setFrame(false);   // reset rings y alturas a F1
+      hideEgg();
     }}
+
     btn.textContent = eggVisible ? "🔄 Reset QR" : "🥚 Reveal Egg";
     btn.style.boxShadow = eggVisible ? "0 0 22px 8px {glow1}" : "0 0 12px 4px {glow2}";
   }});
