@@ -69,6 +69,15 @@ _EGG_DEFAULT   = (12, 0)   # d≥4
 _EGG_MAX_TOP   = 12        # top absoluto máximo en cubos (sin lift)
 EGG_LIFT       = 3         # cubos extra que eleva todo el huevo sobre el QR
 
+# Cubos que se eliminan del TOP por distancia en Frame 2 (contracción)
+_EGG_F2_RED: dict[int, int] = {
+    1: 1,   # nivel 4 desaparece del top de d=1
+    2: 1,   # nivel 3
+    3: 2,   # niveles 2 y 3
+    4: 1,   # nivel 1
+    5: 1,
+}
+
 # Niveles que EXPANDEN en Frame 2 (nivel, f1_size, f2_size, z_desde_abajo)
 # nivel 12 = z=0 (base), nivel 1 = z=11 (cima)
 EXPANDING_LEVELS: list[tuple[int, int, int, int]] = [
@@ -174,7 +183,16 @@ def build_modules_html(matrix: list[list[bool]], n: int,
             x           = c * CUBE_S
             y           = r * CUBE_S
             col_h_px, bot_px = get_egg_targets(r, c, egg)
-            top_px      = col_h_px + bot_px
+            top_px           = col_h_px + bot_px
+
+            # Frame 2: contracción vertical (top se hunde según d-ring)
+            er, ec = r - EGG_OFF, c - EGG_OFF
+            if 0 <= er < EGG_N and 0 <= ec < EGG_N:
+                d      = min(er, EGG_N - 1 - er, ec, EGG_N - 1 - ec)
+                red    = _EGG_F2_RED.get(d, 0)
+                f2h_px = col_h_px - red * CUBE_H
+            else:
+                f2h_px = col_h_px
 
             up_delay   = round((1 - top_px / max_top_px) * 420)
             down_delay = round((top_px / max_top_px) * 420)
@@ -184,6 +202,7 @@ def build_modules_html(matrix: list[list[bool]], n: int,
                 f'style="left:{x}px;top:{y}px;" '
                 f'data-target="{col_h_px}" '
                 f'data-bot="{bot_px}" '
+                f'data-f2h="{f2h_px}" '
                 f'data-up-delay="{up_delay}" '
                 f'data-down-delay="{down_delay}">'
                 '<div class="face top"></div>'
@@ -433,7 +452,10 @@ body {{
   </div>
 </div>
 
+<div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:100;">
 <button class="btn-egg" id="btn">🥚 Reveal Egg</button>
+<button class="btn-egg" id="btn-pulse" disabled style="opacity:.4">💥 Pulse</button>
+</div>
 
 <script>
 /* ---- Partículas ---- */
@@ -521,13 +543,15 @@ body {{
   wrapper.addEventListener("touchend", () => {{ dragging = false; }});
 }})();
 
-/* ---- Egg reveal ---- */
+/* ---- Egg reveal + Pulse ---- */
 (function() {{
-  const btn     = document.getElementById("btn");
-  const modules = document.querySelectorAll(".module");
-  const rings   = document.querySelectorAll(".pulse-ring");
-  const BASE    = {base_h};
+  const btn      = document.getElementById("btn");
+  const btnPulse = document.getElementById("btn-pulse");
+  const modules  = document.querySelectorAll(".module");
+  const rings    = document.querySelectorAll(".pulse-ring");
+  const BASE     = {base_h};
   let eggVisible = false;
+  let pulseOn    = false;
   let ringTimer  = null;
 
   function setModules(toEgg) {{
@@ -541,27 +565,37 @@ body {{
     }});
   }}
 
-  function showRings() {{
-    rings.forEach(r => r.classList.add("visible"));
+  function applyPulse(toF2) {{
+    modules.forEach(m => {{
+      m.style.transitionDelay = "0ms";
+      m.style.setProperty("--h", (toF2 ? m.dataset.f2h : m.dataset.target) + "px");
+    }});
+    rings.forEach(r => r.classList.toggle("visible", toF2));
   }}
 
-  function hideRings() {{
-    clearTimeout(ringTimer);
-    rings.forEach(r => r.classList.remove("visible"));
-  }}
+  function showRings() {{ rings.forEach(r => r.classList.add("visible")); }}
+  function hideRings() {{ clearTimeout(ringTimer); rings.forEach(r => r.classList.remove("visible")); }}
 
   btn.addEventListener("click", () => {{
     eggVisible = !eggVisible;
-    setModules(eggVisible);
-    if (eggVisible) {{
-      ringTimer = setTimeout(showRings, 600);
-    }} else {{
+    if (!eggVisible) {{
+      pulseOn = false;
       hideRings();
+      applyPulse(false);
+      btnPulse.textContent = "💥 Pulse";
     }}
+    setModules(eggVisible);
+    if (eggVisible) {{ ringTimer = setTimeout(showRings, 600); }}
+    btnPulse.disabled = !eggVisible;
+    btnPulse.style.opacity = eggVisible ? "1" : ".4";
     btn.textContent = eggVisible ? "🔄 Reset QR" : "🥚 Reveal Egg";
-    btn.style.boxShadow = eggVisible
-      ? "0 0 22px 8px {glow1}"
-      : "0 0 12px 4px {glow2}";
+    btn.style.boxShadow = eggVisible ? "0 0 22px 8px {glow1}" : "0 0 12px 4px {glow2}";
+  }});
+
+  btnPulse.addEventListener("click", () => {{
+    pulseOn = !pulseOn;
+    applyPulse(pulseOn);
+    btnPulse.textContent = pulseOn ? "🟡 Frame 1" : "💥 Pulse";
   }});
 }})();
 </script>
