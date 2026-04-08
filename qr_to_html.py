@@ -167,12 +167,9 @@ def _ring_dist(er: int, ec: int, f1: int) -> int:
     return max(dr, dc)
 
 
-def build_pulse_rings_html(matrix: list[list[bool]], n: int) -> str:
-    """Genera divs de anillo de expansión. Invisibles hasta reveal.
-    - Color heredado del módulo QR en esa posición (qr-active / qr-inactive).
-    - Delay staggered: z_idx * 60 + (ring_dist-1) * 30 ms → expande desde dentro.
-    - Solo caras visibles del perímetro exterior.
-    """
+def build_pulse_rings_html(matrix: list[list[bool]], n: int,
+                           digi: list[list[int]] | None = None) -> str:
+    """Genera divs de anillo de expansión. Invisibles hasta reveal."""
     parts: list[str] = []
     for _nivel, f1, f2, z_idx in EXPANDING_LEVELS:
         bot_px    = (z_idx + EGG_LIFT) * CUBE_H
@@ -182,16 +179,22 @@ def build_pulse_rings_html(matrix: list[list[bool]], n: int) -> str:
         for er, ec in delta:
             x, y = egg_to_board_px(er, ec)
 
-            # Color del módulo QR en esa posición de tablero
-            br, bc   = er + EGG_OFF, ec + EGG_OFF
-            qr_cls   = "qr-active" if (0 <= br < n and 0 <= bc < n
-                                        and matrix[br][bc]) else "qr-inactive"
+            # Color QR base
+            br, bc = er + EGG_OFF, ec + EGG_OFF
+            qr_cls = "qr-active" if (0 <= br < n and 0 <= bc < n
+                                     and matrix[br][bc]) else "qr-inactive"
 
-            # Stagger outward: celdas más cerca del huevo aparecen antes
+            # Color Digi-Egg: usa la posición del egg grid si está dentro
+            if digi is not None and 0 <= er < EGG_N and 0 <= ec < EGG_N:
+                style_idx = digi[er][ec]
+            else:
+                style_idx = 2   # blanco por defecto (exterior del egg)
+            digi_top  = _DIGI_TOP.get(style_idx, "#ffffff")
+            digi_side = _DIGI_SIDE.get(style_idx, "#c8d8c0")
+
             dist     = _ring_dist(er, ec, f1)
             delay_ms = z_idx * 60 + (dist - 1) * 30
 
-            # Caras: top + bottom siempre; laterales solo en perímetro
             faces = '<div class="face top"></div><div class="face bottom"></div>'
             if (er - 1, ec) not in delta_set:
                 faces += '<div class="face back"></div>'
@@ -205,7 +208,9 @@ def build_pulse_rings_html(matrix: list[list[bool]], n: int) -> str:
             parts.append(
                 f'<div class="pulse-ring {qr_cls}" '
                 f'style="left:{x}px;top:{y}px;transform:translateZ({bot_px}px);" '
-                f'data-ring-delay="{delay_ms}">'
+                f'data-ring-delay="{delay_ms}" '
+                f'data-digi-top="{digi_top}" '
+                f'data-digi-side="{digi_side}">'
                 f'{faces}</div>'
             )
     return "\n".join(parts)
@@ -456,6 +461,17 @@ body {{
 .module.digi .face.left  {{ background: var(--digi-side, #c8d8c0) !important; }}
 .module.digi .face.back  {{ background: var(--digi-side, #c8d8c0) !important; }}
 
+/* Rings: misma lógica */
+.pulse-ring .face {{
+  transition: background-color 1.4s ease-out, opacity .35s ease-out;
+}}
+.pulse-ring.digi .face.top    {{ background: var(--digi-top,  #ffffff) !important; }}
+.pulse-ring.digi .face.bottom {{ background: var(--digi-top,  #ffffff) !important; }}
+.pulse-ring.digi .face.front  {{ background: var(--digi-side, #c8d8c0) !important; }}
+.pulse-ring.digi .face.right  {{ background: var(--digi-side, #c8d8c0) !important; }}
+.pulse-ring.digi .face.left   {{ background: var(--digi-side, #c8d8c0) !important; }}
+.pulse-ring.digi .face.back   {{ background: var(--digi-side, #c8d8c0) !important; }}
+
 /* BOTTOM — cara inferior de los ring cubes */
 .face.bottom {{
   width: {cube_s}px;
@@ -668,12 +684,12 @@ body {{
   function setFrame(toF2) {{
     frame2 = toF2;
     modules.forEach(m => {{
-      m.style.transition      = "none";   // sin animacion, snap instantaneo
+      m.style.transition      = "none";   // snap instantaneo en altura
       m.style.transitionDelay = "0ms";
       m.style.setProperty("--h", (toF2 ? m.dataset.f2h : m.dataset.target) + "px");
     }});
     rings.forEach(r => {{
-      r.querySelectorAll(".face").forEach(f => f.style.transition = "none");
+      // NO matar transition en .face — deja que background-color transite
       r.classList.toggle("visible", toF2);
     }});
   }}
@@ -685,16 +701,23 @@ body {{
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
     }});
-    // Colorize Digi-Egg: stagger row-by-row después de que suba
+    // Colorize módulos: stagger row-by-row después de que suba
     modules.forEach((m, i) => {{
       if (!m.dataset.digiTop) return;
       const row   = Math.floor(i / 21);
-      const delay = 900 + row * 60;   // empieza a 900ms, cae de arriba a abajo
+      const delay = 900 + row * 60;
       setTimeout(() => {{
         m.style.setProperty("--digi-top",  m.dataset.digiTop);
         m.style.setProperty("--digi-side", m.dataset.digiSide);
         m.classList.add("digi");
       }}, delay);
+    }});
+    // Colorize rings: se colorean junto con el reveal
+    rings.forEach(r => {{
+      if (!r.dataset.digiTop) return;
+      r.style.setProperty("--digi-top",  r.dataset.digiTop);
+      r.style.setProperty("--digi-side", r.dataset.digiSide);
+      r.classList.add("digi");
     }});
   }}
 
@@ -706,6 +729,7 @@ body {{
       m.style.setProperty("--bot", "0px");
       m.classList.remove("digi");        // quita colores Digi
     }});
+    rings.forEach(r => r.classList.remove("digi"));  // quita colores de rings
   }}
 
   btn.addEventListener("click", () => {{
@@ -752,7 +776,7 @@ def generate_qr_html(data: str = "Hola Zeth!", output: str = "qr_3d.html") -> Pa
     egg        = compute_egg_heights()
     digi       = load_digi_grid()
     modules    = build_modules_html(matrix, n, egg, digi)
-    rings      = build_pulse_rings_html(matrix, n)
+    rings      = build_pulse_rings_html(matrix, n, digi)
     board_px   = n * CUBE_S
 
     html = HTML_TEMPLATE.format(
