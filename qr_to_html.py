@@ -595,16 +595,20 @@ body {{
   function setFrame(toF2) {{
     frame2 = toF2;
     modules.forEach(m => {{
+      m.style.transition      = "none";   // sin animacion, snap instantaneo
       m.style.transitionDelay = "0ms";
       m.style.setProperty("--h", (toF2 ? m.dataset.f2h : m.dataset.target) + "px");
     }});
-    rings.forEach(r => r.classList.toggle("visible", toF2));
+    rings.forEach(r => {{
+      r.querySelectorAll(".face").forEach(f => f.style.transition = "none");
+      r.classList.toggle("visible", toF2);
+    }});
   }}
 
   function revealEgg() {{
     modules.forEach(m => {{
-      const delay = m.dataset.upDelay;
-      m.style.transitionDelay = delay + "ms";
+      m.style.transition = "";            // restaura CSS transition para la cascada
+      m.style.transitionDelay = m.dataset.upDelay + "ms";
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
     }});
@@ -612,8 +616,8 @@ body {{
 
   function hideEgg() {{
     modules.forEach(m => {{
-      const delay = m.dataset.downDelay;
-      m.style.transitionDelay = delay + "ms";
+      m.style.transition = "";            // restaura CSS transition para la cascada
+      m.style.transitionDelay = m.dataset.downDelay + "ms";
       m.style.setProperty("--h",   BASE + "px");
       m.style.setProperty("--bot", "0px");
     }});
