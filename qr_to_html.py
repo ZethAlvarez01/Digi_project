@@ -442,7 +442,6 @@ body {{
   height: {cube_s}px;
   top: 0; left: 0;
   transform: translateZ(var(--h));
-  outline: 1px solid rgba(0,0,0,0.5);
   transition: background-color 1.4s ease-out;
 }}
 
@@ -696,12 +695,12 @@ body {{
 
   function revealEgg() {{
     modules.forEach(m => {{
-      m.style.transition = "";            // restaura CSS transition para la cascada
-      m.style.transitionDelay = m.dataset.upDelay + "ms";
+      m.style.transition      = "none";   // snap instantaneo en altura
+      m.style.transitionDelay = "0ms";
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
     }});
-    // Colorize módulos: stagger row-by-row después de que suba
+    // Colorize módulos: stagger row-by-row después del snap
     modules.forEach((m, i) => {{
       if (!m.dataset.digiTop) return;
       const row   = Math.floor(i / 21);
@@ -712,7 +711,7 @@ body {{
         m.classList.add("digi");
       }}, delay);
     }});
-    // Colorize rings: se colorean junto con el reveal
+    // Colorize rings
     rings.forEach(r => {{
       if (!r.dataset.digiTop) return;
       r.style.setProperty("--digi-top",  r.dataset.digiTop);
