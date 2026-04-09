@@ -397,7 +397,7 @@ HTML_TEMPLATE = """\
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
 body {{
-  background: #1a3a20;
+  background: #000000;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
