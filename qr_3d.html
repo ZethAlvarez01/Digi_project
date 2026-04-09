@@ -113,8 +113,9 @@ body::before {           /* fondo real: z-index -2, debajo del canvas */
   width: 100vw;
   height: 100vh;
 }
+.board-wrapper {
   transform-style: preserve-3d;
-  transform: rotateX(0deg) rotateZ(0deg);
+  transform: rotateX(60deg) rotateZ(-15deg);
   animation: float 7s ease-in-out infinite;
   cursor: grab;
   will-change: transform;
@@ -122,8 +123,8 @@ body::before {           /* fondo real: z-index -2, debajo del canvas */
 .board-wrapper.dragging { cursor: grabbing; }
 
 @keyframes float {
-  0%,100% { transform: rotateX(0deg) rotateZ(0deg) translateY(0); }
-  50%      { transform: rotateX(0deg) rotateZ(0deg) translateY(-14px); }
+  0%,100% { transform: rotateX(60deg) rotateZ(-15deg) translateY(0); }
+  50%      { transform: rotateX(60deg) rotateZ(-15deg) translateY(-18px); }
 }
 
 /* ---- Marco exterior ---- */
@@ -1375,7 +1376,7 @@ body::before {           /* fondo real: z-index -2, debajo del canvas */
 /* ---- Drag libre acumulativo ---- */
 (function() {
   const wrapper = document.getElementById("wrapper");
-  let rotX = 0, rotZ = 0;
+  let rotX = 60, rotZ = -15;
   let dragging = false, lastX = 0, lastY = 0;
   let floating = true;   // true = animación CSS activa
 
@@ -1416,7 +1417,7 @@ body::before {           /* fondo real: z-index -2, debajo del canvas */
 
   /* Doble-click → reset completo */
   wrapper.addEventListener("dblclick", () => {
-    rotX = 0; rotZ = 0;
+    rotX = 60; rotZ = -15;
     floating = true;
     wrapper.style.animation = "";   // devuelve control al CSS
     wrapper.style.transform = "";
