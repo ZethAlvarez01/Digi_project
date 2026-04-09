@@ -307,11 +307,10 @@ body {
 /* ---- Onda de pulso ---- */
 #pulse-wave {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
   width: 100vw;
-  height: 360px;
+  height: 100vh;
   pointer-events: none;
   opacity: 0;
   z-index: 0;
@@ -1301,12 +1300,12 @@ body {
 
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <!-- Onda de pulso -->
-<svg id="pulse-wave" viewBox="0 0 1000 290" preserveAspectRatio="none"
+<svg id="pulse-wave" viewBox="0 0 1000 100" preserveAspectRatio="none"
      xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <filter id="wglow" x="-5%" y="-80%" width="110%" height="260%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4"  result="b1"/>
-      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="b2"/>
+    <filter id="wglow" x="-5%" y="-200%" width="110%" height="500%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="b1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3"   result="b2"/>
       <feFlood flood-color="#b400ff" flood-opacity="1" result="color"/>
       <feComposite in="color" in2="b1" operator="in" result="glow1"/>
       <feComposite in="color" in2="b2" operator="in" result="glow2"/>
@@ -1317,7 +1316,7 @@ body {
       </feMerge>
     </filter>
   </defs>
-  <path id="wave-path" fill="none" stroke="#000000" stroke-width="4"
+  <path id="wave-path" fill="none" stroke="#000000" stroke-width="1.2"
         filter="url(#wglow)" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 
@@ -1587,7 +1586,7 @@ body {
 (function() {
   const svg  = document.getElementById("pulse-wave");
   const path = document.getElementById("wave-path");
-  const W = 1000, CY = 145;  /* CY = 145/290 = 50% del viewBox → centrado */
+  const W = 1000, CY = 50;  /* CY=50/100 = 50vh exacto */
   let   animId = null;
 
   function gauss(x, cx, sigma, amp) {
@@ -1598,16 +1597,16 @@ body {
     const MID = W / 2;
     let d = "";
     for (let x = 0; x <= W; x += 2) {
-      const t   = x / W;
-      const env = Math.sin(t * Math.PI);
+      const t       = x / W;
+      const env     = Math.sin(t * Math.PI);
       const distMid = Math.abs(x - MID);
       const spikeMask = 1 - Math.exp(-0.5 * Math.pow(distMid / 80, 2));
-      const noise    = (Math.random() - 0.5) * 10 * env * spikeMask;
-      const baseline = Math.sin(x * 0.025) * 6 * env;
-      const pWave = gauss(x, MID - 150, 28, -18);
-      const rWave = gauss(x, MID,        16, -132); /* peak y = 145-132 = 13 */
-      const sWave = gauss(x, MID + 28,   14,  35);
-      const tWave = gauss(x, MID + 130,  42, -38);
+      const noise    = (Math.random() - 0.5) * 3 * env * spikeMask;
+      const baseline = Math.sin(x * 0.025) * 2 * env;
+      const pWave = gauss(x, MID - 150, 28, -5);
+      const rWave = gauss(x, MID,        16, -32);
+      const sWave = gauss(x, MID + 28,   14,  10);
+      const tWave = gauss(x, MID + 130,  42, -10);
       const y = CY + baseline + noise + pWave + rWave + sWave + tWave;
       d += (x === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
     }
