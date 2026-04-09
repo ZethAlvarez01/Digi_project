@@ -683,7 +683,7 @@ body {{
   left: 50%;
   transform: translate(-50%, -50%);
   width: 100vw;
-  height: 180px;
+  height: 280px;
   pointer-events: none;
   opacity: 0;
   z-index: 0;
@@ -706,7 +706,7 @@ body {{
 
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <!-- Onda de pulso -->
-<svg id="pulse-wave" viewBox="0 0 1000 100" preserveAspectRatio="none"
+<svg id="pulse-wave" viewBox="0 0 1000 160" preserveAspectRatio="none"
      xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="wglow" x="-5%" y="-80%" width="110%" height="260%">
@@ -985,7 +985,7 @@ body {{
 (function() {{
   const svg  = document.getElementById("pulse-wave");
   const path = document.getElementById("wave-path");
-  const W = 1000, CY = 50;
+  const W = 1000, CY = 80;
   let   animId = null;
 
   function makeWave() {{
@@ -993,8 +993,8 @@ body {{
     for (let x = 0; x <= W; x += 3) {{
       const t   = x / W;
       const env = Math.sin(t * Math.PI);
-      const y   = CY + Math.sin(x * 0.055) * 28 * env
-                     + (Math.random() - 0.5) * 18 * env;
+      const y   = CY + Math.sin(x * 0.055) * 55 * env
+                     + (Math.random() - 0.5) * 32 * env;
       d += (x === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
     }}
     return d;
