@@ -320,16 +320,25 @@ def build_modules_html(matrix: list[list[bool]], n: int,
             # Colores Digi-Egg (gradientes por nivel Z, solo celdas del egg)
             digi_attrs = ""
             if grid_f1 is not None and 0 <= er < EGG_N and 0 <= ec < EGG_N:
-                sf1          = grid_f1[er][ec]
-                digi_top     = _DIGI_TOP_MOD.get(sf1, "#e0e0e0")
                 # col_h y bot en unidades CUBE_H, sin el lift
                 col_h_u = col_h_px // CUBE_H
                 bot_u   = (bot_px - EGG_LIFT * CUBE_H) // CUBE_H
                 f2h_u   = f2h_px  // CUBE_H
+
+                # Top face: Z-mapped al er del patrón que queda en la cima de esta columna
+                # er_top = 12 - bot_u - col_h  (el i=col_h-1 de make_lateral_stops)
+                er_top_f1 = 12 - bot_u - col_h_u
+                er_top_f2 = 12 - bot_u - f2h_u
+                sf1_top   = grid_f1[er_top_f1][ec] if 0 <= er_top_f1 < EGG_N else 1
+                sf2_top   = (grid_f2 or grid_f1)[er_top_f2][ec] if 0 <= er_top_f2 < EGG_N else 1
+                digi_top_f1 = _DIGI_TOP_MOD.get(sf1_top, "#e0e0e0")
+                digi_top_f2 = _DIGI_TOP_MOD.get(sf2_top, "#e0e0e0")
+
                 stops_f1 = make_lateral_stops(col_h_u, bot_u, grid_f1, ec)
                 stops_f2 = make_lateral_stops(f2h_u,   bot_u, grid_f2 or grid_f1, ec)
                 digi_attrs = (
-                    f'data-digi-top="{digi_top}" '
+                    f'data-digi-top="{digi_top_f1}" '
+                    f'data-digi-top-f2="{digi_top_f2}" '
                     f'data-digi-stops-f1="{stops_f1}" '
                     f'data-digi-stops-f2="{stops_f2}" '
                 )
@@ -749,8 +758,8 @@ body {{
   }}
 
   function applyDigiGrads(m, toF2) {{
-    const attr  = toF2 ? "digiStopsF2" : "digiStopsF1";
-    const raw   = m.dataset[attr];
+    const stopsAttr = toF2 ? "digiStopsF2" : "digiStopsF1";
+    const raw = m.dataset[stopsAttr];
     if (!raw) return;
     const stops = raw.split("|");
     const g     = buildGrads(stops);
@@ -758,6 +767,9 @@ body {{
     m.style.setProperty("--digi-right", g.right);
     m.style.setProperty("--digi-left",  g.left);
     m.style.setProperty("--digi-back",  g.back);
+    // Top face: usa el color del frame correcto
+    const topColor = toF2 ? m.dataset.digiTopF2 : m.dataset.digiTop;
+    if (topColor) m.style.setProperty("--digi-top", topColor);
   }}
 
   function applyDigiSide(toF2) {{
