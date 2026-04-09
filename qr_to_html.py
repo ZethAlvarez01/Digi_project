@@ -692,7 +692,7 @@ body {{
 
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <button class="btn-egg" id="btn">
-  <svg class="btn-hand" viewBox="-2 1.5 16 13.5" xmlns="http://www.w3.org/2000/svg">
+  <svg class="btn-hand" viewBox="-2 1.5 13 13.5" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <filter id="hglow" x="-20%" y="-20%" width="140%" height="140%">
         <feGaussianBlur in="SourceGraphic" stdDeviation="0.3" result="b"/>
@@ -700,46 +700,40 @@ body {{
       </filter>
     </defs>
     <!--
-      Palma  : x1-12, y6-13  (7 tall, 11 wide — casi cuadrada)
-      D1 ind : x1-3,  top y=3  (height=3)
-      D2 med : x4-6,  top y=2  (height=4, el mas alto)
-      D3 anu : x7-9,  top y=3  (height=3, igual D1)
-      D4 men : x10-12 top y=4  (height=2, el mas corto)
-      Pulgar : x-1..1, y7-11  (height=4, prominente)
+      Dedos juntos (sin gaps):
+      D1 ind : x1-3, top y=3
+      D2 med : x3-5, top y=2  (mas alto)
+      D3 anu : x5-7, top y=3  (igual D1)
+      D4 men : x7-9, top y=4  (mas corto)
+      Palma  : x1-9, y6-14
+      Pulgar : x-1..1, y7-11
     -->
 
     <!-- sombra 3D -->
     <path fill="#0369a1" transform="translate(0.6,0.6)"
-      d="M1,3 H3 V6 H4 V2 H6 V6 H7 V3 H9 V6 H9.5 V4 H11 V6
-         H11 V14 H1 V11 H-1 V7 H1 Z"/>
+      d="M1,3 H3 V2 H5 V3 H7 V4 H9 V14 H1 V11 H-1 V7 H1 Z"/>
 
     <!-- forma azul principal -->
     <path fill="#38bdf8" filter="url(#hglow)"
-      d="M1,3 H3 V6 H4 V2 H6 V6 H7 V3 H9 V6 H9.5 V4 H11 V6
-         H11 V14 H1 V11 H-1 V7 H1 Z"/>
+      d="M1,3 H3 V2 H5 V3 H7 V4 H9 V14 H1 V11 H-1 V7 H1 Z"/>
 
     <!-- interior blanco (inset 0.4) -->
     <path fill="white"
-      d="M1.4,3.4 H2.6 V6 H4.4 V2.4 H5.6 V6 H7.4 V3.4 H8.6 V6
-         H9.9 V4.4 H10.6 V6 H10.6 V13.6 H1.4 V10.6 H-0.6 V7.4
-         H1.4 Z"/>
+      d="M1.4,3.4 H2.6 V2.4 H4.6 V3.4 H6.6 V4.4 H8.6 V13.6
+         H1.4 V10.6 H-0.6 V7.4 H1.4 Z"/>
 
     <!-- highlights top dedos -->
-    <rect x="1.4"  y="3.4" width="1.2" height="0.4" fill="#e0f7ff" opacity="0.85"/>
-    <rect x="4.4"  y="2.4" width="1.2" height="0.4" fill="#e0f7ff" opacity="0.85"/>
-    <rect x="7.4"  y="3.4" width="1.2" height="0.4" fill="#e0f7ff" opacity="0.85"/>
-    <rect x="9.9"  y="4.4" width="0.7"  height="0.4"  fill="#e0f7ff" opacity="0.85"/>
+    <rect x="1.4" y="3.4" width="1.2" height="0.4" fill="#e0f7ff" opacity="0.85"/>
+    <rect x="3.4" y="2.4" width="1.2" height="0.4" fill="#e0f7ff" opacity="0.85"/>
+    <rect x="5.4" y="3.4" width="1.2" height="0.4" fill="#e0f7ff" opacity="0.85"/>
+    <rect x="7.4" y="4.4" width="1.2" height="0.4" fill="#e0f7ff" opacity="0.85"/>
     <!-- highlight top pulgar -->
     <rect x="-0.6" y="7.4" width="1.2" height="0.4" fill="#e0f7ff" opacity="0.85"/>
-    <!-- highlights borde izquierdo dedos -->
-    <rect x="1.4"  y="3.4" width="0.28" height="2.6" fill="#e0f7ff" opacity="0.5"/>
-    <rect x="4.4"  y="2.4" width="0.28" height="3.6" fill="#e0f7ff" opacity="0.5"/>
-    <rect x="7.4"  y="3.4" width="0.28" height="2.6" fill="#e0f7ff" opacity="0.5"/>
-    <rect x="9.9"  y="4.4" width="0.28" height="1.6" fill="#e0f7ff" opacity="0.5"/>
-    <!-- highlights borde izquierdo palma + pulgar -->
-    <rect x="-0.6" y="7.4" width="0.28" height="3.2" fill="#e0f7ff" opacity="0.5"/>
-    <rect x="1.4"  y="6"   width="0.28" height="7.6" fill="#e0f7ff" opacity="0.35"/>
-    <rect x="1.4"  y="6"   width="9.2"  height="0.28" fill="#e0f7ff" opacity="0.4"/>
+    <!-- highlight borde izquierdo D1 + palma + pulgar -->
+    <rect x="1.4"  y="3.4" width="0.28" height="10.2" fill="#e0f7ff" opacity="0.4"/>
+    <rect x="-0.6" y="7.4" width="0.28" height="3.2"  fill="#e0f7ff" opacity="0.5"/>
+    <!-- highlight borde superior palma -->
+    <rect x="1.4" y="6" width="7.2" height="0.28" fill="#e0f7ff" opacity="0.4"/>
   </svg>
   <span class="btn-label">e-PULSE</span>
 </button>
