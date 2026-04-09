@@ -427,24 +427,48 @@ body {{
 /* ---- Botón ---- */
 .btn-egg {{
   position: fixed;
-  bottom: 32px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  padding: 12px 32px;
-  background: #0053e2;
-  color: #fff;
+  background: none;
   border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: .06em;
   cursor: pointer;
-  box-shadow: 0 0 12px 4px {glow2};
-  transition: background .15s, box-shadow .15s, transform .1s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  filter: drop-shadow(0 0 8px #7700aa);
+  transition: filter .2s, transform .1s;
 }}
-.btn-egg:hover  {{ background: #1a63f0; box-shadow: 0 0 18px 6px {glow1}; }}
-.btn-egg:active {{ transform: translateX(-50%) scale(.96); }}
+.btn-egg:hover  {{ filter: drop-shadow(0 0 20px #b400ff) drop-shadow(0 0 8px #38bdf8); }}
+.btn-egg:active {{ transform: translateX(-50%) scale(.93); }}
+.btn-egg.egg-on {{ filter: drop-shadow(0 0 24px #b400ff) drop-shadow(0 0 10px #38bdf8); }}
+
+/* ---- Manita pixel-art ---- */
+.btn-hand {{
+  width: 64px;
+  height: 70px;
+  display: block;
+}}
+
+/* ---- Texto e-PULSE ---- */
+.btn-label {{
+  font-family: "Arial Black", "Arial", sans-serif;
+  font-size: 17px;
+  font-weight: 900;
+  font-style: italic;
+  color: #bae6fd;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  text-shadow:
+    1px 1px 0 #0ea5e9,
+    2px 2px 0 #0284c7,
+    3px 3px 0 #0369a1,
+    0 0 14px #38bdf8,
+    0 0 30px #0284c7;
+}}
 
 /* ---- Escena 3D ---- */
 .scene {{
@@ -668,7 +692,53 @@ body {{
 </div>
 
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
-<button class="btn-egg" id="btn">🥚 Reveal Egg</button>
+<button class="btn-egg" id="btn">
+  <svg class="btn-hand" viewBox="0 0 14 13" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="hglow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="0.35" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <!-- Sombra 3D inferior-derecha -->
+    <g fill="#0369a1" transform="translate(0.5,0.5)">
+      <rect x="1" y="0" width="2" height="5"/>
+      <rect x="4" y="0" width="2" height="5"/>
+      <rect x="7" y="0" width="2" height="5"/>
+      <rect x="10" y="0" width="2" height="5"/>
+      <rect x="1" y="4" width="11" height="8"/>
+      <rect x="0" y="5" width="2" height="4"/>
+    </g>
+    <!-- Capa media (borde azul) -->
+    <g fill="#38bdf8" filter="url(#hglow)">
+      <rect x="1" y="0" width="2" height="5"/>
+      <rect x="4" y="0" width="2" height="5"/>
+      <rect x="7" y="0" width="2" height="5"/>
+      <rect x="10" y="0" width="2" height="5"/>
+      <rect x="1" y="4" width="11" height="8"/>
+      <rect x="0" y="5" width="2" height="4"/>
+    </g>
+    <!-- Interior blanco -->
+    <g fill="white">
+      <rect x="1.35" y="0.35" width="1.3" height="4.3"/>
+      <rect x="4.35" y="0.35" width="1.3" height="4.3"/>
+      <rect x="7.35" y="0.35" width="1.3" height="4.3"/>
+      <rect x="10.35" y="0.35" width="1.3" height="4.3"/>
+      <rect x="1.35" y="4.35" width="10.3" height="7.3"/>
+      <rect x="0.35" y="5.35" width="1.3" height="3.3"/>
+    </g>
+    <!-- Highlight top-left (simula luz) -->
+    <g fill="#e0f7ff" opacity="0.55">
+      <rect x="1.35" y="0.35" width="0.55" height="4.3"/>
+      <rect x="4.35" y="0.35" width="0.55" height="4.3"/>
+      <rect x="7.35" y="0.35" width="0.55" height="4.3"/>
+      <rect x="10.35" y="0.35" width="0.55" height="4.3"/>
+      <rect x="1.35" y="4.35" width="10.3" height="0.55"/>
+      <rect x="0.35" y="5.35" width="1.3" height="0.55"/>
+    </g>
+  </svg>
+  <span class="btn-label">e-PULSE</span>
+</button>
 </div>
 
 <script>
@@ -876,8 +946,7 @@ body {{
       frame2 = false;
       hideEgg();
     }}
-    btn.textContent  = eggVisible ? "🔄 Reset QR" : "🥚 Reveal Egg";
-    btn.style.boxShadow = eggVisible ? "0 0 22px 8px {glow1}" : "0 0 12px 4px {glow2}";
+    btn.classList.toggle("egg-on", eggVisible);
   }});
 }})();
 </script>
