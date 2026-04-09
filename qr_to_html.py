@@ -507,10 +507,11 @@ body {{
 .board.frame2 .module {{
   --h: var(--hf2) !important;
 }}
-/* Switching: bloquea cualquier transición activa durante el snap */
+/* Switching: bloquea transición Y animación durante el snap de frame */
 .board.switching .module,
 .board.switching .module .face {{
   transition: none !important;
+  animation:  none !important;
 }}
 
 /* ---- Caras base ---- */
@@ -531,6 +532,13 @@ body {{
 /* Caras laterales */
 
 /* Digi-Egg colorized — clase .digi añadida por JS tras el reveal */
+@keyframes digi-in {{
+  from {{ opacity: 0; }}
+  to   {{ opacity: 1; }}
+}}
+.module.digi .face {{
+  animation: digi-in 0.8s ease-out both;
+}}
 /* F1 (default) */
 .module.digi .face.top   {{ background: var(--digi-top,   #f0fff0) !important; }}
 .module.digi .face.front {{ background: var(--digi-front, #f0f0f0) !important; }}
@@ -821,10 +829,14 @@ body {{
   /* setFrame: 0 mutations en módulos — solo un toggle de clase en el board */
   function setFrame(toF2) {{
     frame2 = toF2;
-    board.classList.add("switching");          // bloquea transiciones activas
-    board.classList.toggle("frame2", toF2);    // CSS override de --h y colores
+    board.classList.add("switching");        // bloquea transiciones
+    board.classList.toggle("frame2", toF2); // CSS override de --h y colores
     rings.forEach(r => r.classList.toggle("visible", toF2));
-    requestAnimationFrame(() => board.classList.remove("switching"));
+    // Doble-RAF: primer RAF schedula el segundo; el paint ocurre entre ambos
+    // → el browser pinta el snap ANTES de que se quite "switching"
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      board.classList.remove("switching")
+    ));
   }}
 
   function revealEgg() {{
@@ -835,10 +847,10 @@ body {{
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
     }});
-    /* Stagger clase .digi por fila */
+    /* Stagger clase .digi por fila — más delay para que el huevo termine de subir */
     modules.forEach((m, i) => {{
       if (!m.dataset.digiStopsF1) return;
-      const delay = 900 + Math.floor(i / 21) * 60;
+      const delay = 1400 + Math.floor(i / 21) * 90;
       setTimeout(() => m.classList.add("digi"), delay);
     }});
     rings.forEach(r => r.classList.add("digi"));
