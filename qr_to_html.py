@@ -481,7 +481,7 @@ body {{
 
 .board-wrapper {{
   transform-style: preserve-3d;
-  transform: rotateX(60deg) rotateZ(-15deg);
+  transform: rotateX(0deg) rotateZ(0deg);
   animation: float 7s ease-in-out infinite;
   cursor: grab;
   will-change: transform;
@@ -489,8 +489,8 @@ body {{
 .board-wrapper.dragging {{ cursor: grabbing; }}
 
 @keyframes float {{
-  0%,100% {{ transform: rotateX(60deg) rotateZ(-15deg) translateY(0); }}
-  50%      {{ transform: rotateX(60deg) rotateZ(-15deg) translateY(-14px); }}
+  0%,100% {{ transform: rotateX(0deg) rotateZ(0deg) translateY(0); }}
+  50%      {{ transform: rotateX(0deg) rotateZ(0deg) translateY(-14px); }}
 }}
 
 /* ---- Marco exterior ---- */
@@ -764,7 +764,7 @@ body {{
 /* ---- Drag libre acumulativo ---- */
 (function() {{
   const wrapper = document.getElementById("wrapper");
-  let rotX = 60, rotZ = -15;
+  let rotX = 0, rotZ = 0;
   let dragging = false, lastX = 0, lastY = 0;
   let floating = true;   // true = animación CSS activa
 
@@ -805,7 +805,7 @@ body {{
 
   /* Doble-click → reset completo */
   wrapper.addEventListener("dblclick", () => {{
-    rotX = 60; rotZ = -15;
+    rotX = 0; rotZ = 0;
     floating = true;
     wrapper.style.animation = "";   // devuelve control al CSS
     wrapper.style.transform = "";
