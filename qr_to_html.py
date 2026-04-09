@@ -674,6 +674,24 @@ body {{
 .pulse-ring.qr-inactive .face.right  {{ background: linear-gradient(to right,  {i_right} 0%, {i_back} 100%); }}
 .pulse-ring.qr-inactive .face.left   {{ background: linear-gradient(to left,   {i_left}  0%, {i_back} 100%); }}
 .pulse-ring.qr-inactive .face.back   {{ background: linear-gradient(to top,    {i_front} 0%, {i_back} 100%); }}
+/* ---- Onda de pulso ---- */
+#pulse-wave {{
+  position: fixed;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 99;
+  overflow: visible;
+}}
+@keyframes wave-fade {{
+  0%   {{ opacity: 0; }}
+  12%  {{ opacity: 1; }}
+  70%  {{ opacity: 1; }}
+  100% {{ opacity: 0; }}
+}}
+.wave-active {{ animation: wave-fade 950ms ease-out forwards; }}
 </style>
 </head>
 <body>
@@ -690,6 +708,19 @@ body {{
 </div>
 
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
+<!-- Onda de pulso -->
+<svg id="pulse-wave" viewBox="0 0 240 54" width="240" height="54" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="wglow" x="-15%" y="-60%" width="130%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b2"/>
+      <feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <path id="wave-path" fill="none" stroke="{glow1}" stroke-width="2"
+        filter="url(#wglow)" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+
 <button class="btn-egg" id="btn">
   <svg class="btn-hand" viewBox="-2 2.5 13 12.5" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -950,6 +981,53 @@ body {{
     }}
     btn.classList.toggle("egg-on", eggVisible);
   }});
+}})();
+/* ---- Onda de pulso al presionar boton ---- */
+(function() {{
+  const svg  = document.getElementById("pulse-wave");
+  const path = document.getElementById("wave-path");
+  const W = 240, H = 54, CY = 27;
+
+  function makeWave() {{
+    let d = "";
+    for (let x = 0; x <= W; x += 1.8) {{
+      const t   = x / W;
+      const env = Math.sin(t * Math.PI);          /* envelope: 0 en bordes */
+      const sine = Math.sin(x * 0.22) * 13 * env;
+      const noise = (Math.random() - 0.5) * 7 * env;
+      const y = CY + sine + noise;
+      d += (x === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+    }}
+    return d;
+  }}
+
+  function triggerWave() {{
+    /* generar nueva onda ruidosa cada vez */
+    path.setAttribute("d", makeWave());
+
+    /* stroke draw-in */
+    const len = path.getTotalLength();
+    path.style.strokeDasharray  = len;
+    path.style.strokeDashoffset = len;
+
+    /* reset animacion */
+    svg.classList.remove("wave-active");
+    void svg.offsetWidth;
+    svg.classList.add("wave-active");
+
+    /* animar dashoffset: dibujar en 220ms */
+    let start = null;
+    (function animDash(ts) {{
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / 220, 1);
+      path.style.strokeDashoffset = len * (1 - p);
+      if (p < 1) requestAnimationFrame(animDash);
+    }})(performance.now());
+  }}
+
+  const btn = document.getElementById("btn");
+  btn.addEventListener("mousedown",  triggerWave);
+  btn.addEventListener("touchstart", triggerWave, {{passive: true}});
 }})();
 </script>
 </body>
