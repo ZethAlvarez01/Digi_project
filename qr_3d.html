@@ -1301,7 +1301,7 @@ body {
 
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <!-- Onda de pulso -->
-<svg id="pulse-wave" viewBox="0 0 1000 260" preserveAspectRatio="none"
+<svg id="pulse-wave" viewBox="0 0 1000 290" preserveAspectRatio="none"
      xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="wglow" x="-5%" y="-80%" width="110%" height="260%">
@@ -1587,7 +1587,7 @@ body {
 (function() {
   const svg  = document.getElementById("pulse-wave");
   const path = document.getElementById("wave-path");
-  const W = 1000, CY = 175;
+  const W = 1000, CY = 145;  /* CY = 145/290 = 50% del viewBox → centrado */
   let   animId = null;
 
   function gauss(x, cx, sigma, amp) {
@@ -1600,16 +1600,14 @@ body {
     for (let x = 0; x <= W; x += 2) {
       const t   = x / W;
       const env = Math.sin(t * Math.PI);
-      /* ruido de fondo solo en flancos, casi nulo en spike */
       const distMid = Math.abs(x - MID);
       const spikeMask = 1 - Math.exp(-0.5 * Math.pow(distMid / 80, 2));
       const noise    = (Math.random() - 0.5) * 10 * env * spikeMask;
       const baseline = Math.sin(x * 0.025) * 6 * env;
-      /* componentes ECG — Y negativo = sube en pantalla */
       const pWave = gauss(x, MID - 150, 28, -18);
-      const rWave = gauss(x, MID,        16, -148);
-      const sWave = gauss(x, MID + 28,   14,  38);
-      const tWave = gauss(x, MID + 130,  42, -42);
+      const rWave = gauss(x, MID,        16, -132); /* peak y = 145-132 = 13 */
+      const sWave = gauss(x, MID + 28,   14,  35);
+      const tWave = gauss(x, MID + 130,  42, -38);
       const y = CY + baseline + noise + pWave + rWave + sWave + tWave;
       d += (x === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
     }
