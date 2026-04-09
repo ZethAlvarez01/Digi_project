@@ -305,16 +305,12 @@ body {
 .pulse-ring.qr-inactive .face.left   { background: linear-gradient(to left,   #b0a0d8  0%, #a898cc 100%); }
 .pulse-ring.qr-inactive .face.back   { background: linear-gradient(to top,    #c8b8ee 0%, #a898cc 100%); }
 /* ---- Onda de pulso ---- */
-#pulse-wave {
+#pulse-canvas {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
   pointer-events: none;
-  opacity: 0;
   z-index: 2;
-  overflow: visible;
 }
 </style>
 </head>
@@ -1300,25 +1296,7 @@ body {
 
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <!-- Onda de pulso -->
-<svg id="pulse-wave" viewBox="0 0 1000 100" preserveAspectRatio="none"
-     xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="wglow" x="-5%" y="-200%" width="110%" height="500%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="b1"/>
-      <feGaussianBlur in="SourceGraphic" stdDeviation="3"   result="b2"/>
-      <feFlood flood-color="#b400ff" flood-opacity="1" result="color"/>
-      <feComposite in="color" in2="b1" operator="in" result="glow1"/>
-      <feComposite in="color" in2="b2" operator="in" result="glow2"/>
-      <feMerge>
-        <feMergeNode in="glow2"/>
-        <feMergeNode in="glow1"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
-  <path id="wave-path" fill="none" stroke="#b400ff" stroke-width="1.5"
-        filter="url(#wglow)" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<canvas id="pulse-canvas"></canvas>
 
 <button class="btn-egg" id="btn">
   <svg class="btn-hand" viewBox="-2 2.5 13 12.5" xmlns="http://www.w3.org/2000/svg">
@@ -1582,68 +1560,87 @@ body {
     btn.classList.toggle("egg-on", eggVisible);
   });
 })();
-/* ---- Onda de pulso al presionar boton ---- */
+/* ---- Onda de pulso (Canvas) ---- */
 (function() {
-  const svg  = document.getElementById("pulse-wave");
-  const path = document.getElementById("wave-path");
-  const W = 1000, CY = 50;  /* CY=50/100 = 50vh exacto */
+  const canvas = document.getElementById("pulse-canvas");
+  const ctx    = canvas.getContext("2d");
   let   animId = null;
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resize);
+  resize();
 
   function gauss(x, cx, sigma, amp) {
     return amp * Math.exp(-0.5 * Math.pow((x - cx) / sigma, 2));
   }
 
-  function makeWave() {
+  function makePoints() {
+    const W   = canvas.width;
+    const CY  = canvas.height * 0.5;
     const MID = W / 2;
-    let d = "";
+    const pts = [];
     for (let x = 0; x <= W; x += 2) {
-      const t       = x / W;
-      const env     = Math.sin(t * Math.PI);
-      const distMid = Math.abs(x - MID);
-      const spikeMask = 1 - Math.exp(-0.5 * Math.pow(distMid / 80, 2));
-      const noise    = (Math.random() - 0.5) * 3 * env * spikeMask;
-      const baseline = Math.sin(x * 0.025) * 2 * env;
-      const pWave = gauss(x, MID - 150, 28, -5);
-      const rWave = gauss(x, MID,        16, -32);
-      const sWave = gauss(x, MID + 28,   14,  10);
-      const tWave = gauss(x, MID + 130,  42, -10);
-      const y = CY + baseline + noise + pWave + rWave + sWave + tWave;
-      d += (x === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+      const t        = x / W;
+      const env      = Math.sin(t * Math.PI);
+      const distMid  = Math.abs(x - MID);
+      const noMask   = 1 - Math.exp(-0.5 * Math.pow(distMid / (W * 0.08), 2));
+      const noise    = (Math.random() - 0.5) * canvas.height * 0.03 * env * noMask;
+      const baseline = Math.sin(x * 0.025) * canvas.height * 0.02 * env;
+      const pH = canvas.height;
+      const pWave = gauss(x, MID - W*0.15, W*0.028, -pH*0.05);
+      const rWave = gauss(x, MID,           W*0.016, -pH*0.35);
+      const sWave = gauss(x, MID + W*0.028, W*0.014,  pH*0.10);
+      const tWave = gauss(x, MID + W*0.13,  W*0.042, -pH*0.10);
+      pts.push([x, CY + baseline + noise + pWave + rWave + sWave + tWave]);
     }
-    return d;
+    return pts;
+  }
+
+  function drawWave(pts, alpha) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    /* glow capas */
+    ["#7700aa", "#b400ff"].forEach((col, i) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
+      ctx.strokeStyle = col;
+      ctx.lineWidth   = i === 0 ? 18 : 8;
+      ctx.globalAlpha = alpha * (i === 0 ? 0.25 : 0.5);
+      ctx.shadowColor = "#b400ff";
+      ctx.shadowBlur  = i === 0 ? 30 : 12;
+      ctx.stroke();
+      ctx.restore();
+    });
+    /* linea principal negra */
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth   = 2.5;
+    ctx.globalAlpha = alpha;
+    ctx.stroke();
+    ctx.restore();
   }
 
   function triggerWave() {
-    /* cancelar animacion previa si sigue corriendo */
     if (animId) { cancelAnimationFrame(animId); animId = null; }
-
-    path.setAttribute("d", makeWave());
-    const len = path.getTotalLength();
-    path.style.strokeDasharray  = len;
-    path.style.strokeDashoffset = len;
-    svg.style.opacity = "0";
-
-    const TOTAL = 950;   /* duracion total ms */
-    const DRAW  = 220;   /* tiempo draw-in ms */
+    const pts   = makePoints();
+    const TOTAL = 950;
     const start = performance.now();
-
     function frame(ts) {
-      const elapsed = ts - start;
-      const t = Math.min(elapsed / TOTAL, 1);
-
-      /* opacidad: fade-in rapido, hold, fade-out suave */
-      let op;
-      if      (t < 0.12) op = t / 0.12;
-      else if (t < 0.70) op = 1;
-      else               op = 1 - (t - 0.70) / 0.30;
-      svg.style.opacity = op;
-
-      /* draw-in del stroke */
-      const drawP = Math.min(elapsed / DRAW, 1);
-      path.style.strokeDashoffset = len * (1 - drawP);
-
+      const t = Math.min((ts - start) / TOTAL, 1);
+      let alpha;
+      if      (t < 0.12) alpha = t / 0.12;
+      else if (t < 0.70) alpha = 1;
+      else               alpha = 1 - (t - 0.70) / 0.30;
+      drawWave(pts, alpha);
       if (t < 1) { animId = requestAnimationFrame(frame); }
-      else       { svg.style.opacity = "0"; animId = null; }
+      else       { ctx.clearRect(0, 0, canvas.width, canvas.height); animId = null; }
     }
     animId = requestAnimationFrame(frame);
   }
