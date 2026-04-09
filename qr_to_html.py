@@ -724,9 +724,9 @@ body {{
          H1.4 V10.6 H-0.6 V7.4 H1.4 Z"/>
 
     <!-- lineas entre dedos -->
-    <rect x="2.75" y="4"  width="0.5" height="2" fill="#5bbef5" opacity="0.9"/>
-    <rect x="4.75" y="4"  width="0.5" height="2" fill="#5bbef5" opacity="0.9"/>
-    <rect x="6.75" y="5"  width="0.5" height="1" fill="#5bbef5" opacity="0.9"/>
+    <rect x="2.75" y="4"  width="0.5" height="3" fill="#5bbef5" opacity="0.9"/>
+    <rect x="4.75" y="3"  width="0.5" height="4" fill="#5bbef5" opacity="0.9"/>
+    <rect x="6.75" y="5"  width="0.5" height="2" fill="#5bbef5" opacity="0.9"/>
 
     <!-- highlights top dedos -->
     <rect x="1.4" y="4.4" width="1.2" height="0.4" fill="#e0f7ff" opacity="0.85"/>
