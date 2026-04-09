@@ -962,16 +962,16 @@ body {{
 # Generador principal
 # ---------------------------------------------------------------------------
 
-def generate_qr_html(data: str = "Hola Zeth!", output: str = "qr_3d.html") -> Path:
+def generate_qr_html(data: str = "【WELCOME TO DIGIMON WORLD】", output: str = "qr_3d.html") -> Path:
     """Genera el HTML autocontenido y lo abre en el browser."""
     qr = qrcode.QRCode(
-        version=1,
+        version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
         box_size=1,
         border=0,
     )
     qr.add_data(data)
-    qr.make(fit=False)
+    qr.make(fit=True)
     matrix = qr.get_matrix()
     n = len(matrix)
 
@@ -1002,4 +1002,4 @@ def generate_qr_html(data: str = "Hola Zeth!", output: str = "qr_3d.html") -> Pa
 
 
 if __name__ == "__main__":
-    generate_qr_html("Hola Zeth!")
+    generate_qr_html("【WELCOME TO DIGIMON WORLD】")
