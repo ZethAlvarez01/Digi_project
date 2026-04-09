@@ -123,7 +123,7 @@ A_LEFT  = "#280058"
 A_BACK  = "#200048"
 
 # Caras — módulo INACTIVO (claro)
-I_TOP   = "#f5eeff"
+I_TOP   = "#ede0ff"
 I_FRONT = "#c8b8ee"
 I_RIGHT = "#b8a8de"
 I_LEFT  = "#b0a0d8"
@@ -496,7 +496,7 @@ body {{
 /* ---- Marco exterior ---- */
 .board-frame {{
   padding: {cube_s}px;
-  background: #faf5ff;
+  background: #f2e8ff;
   border: {cube_s}px solid #000;
   box-shadow:
     0 0 10px 4px {glow1},
