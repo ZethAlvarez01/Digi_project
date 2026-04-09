@@ -983,30 +983,37 @@ body::before {{           /* fondo real: z-index -2, debajo del canvas */
   window.addEventListener("resize", resize);
   resize();
 
+  /* gauss helper solo para el spike central */
+  function gauss(x, cx, s, a) {{
+    return a * Math.exp(-0.5 * Math.pow((x - cx) / s, 2));
+  }}
+
   function makePoints() {{
     const W   = canvas.width;
     const CY  = canvas.height * 0.5;
-    const AMP = canvas.height * 0.40;  /* amplitud maxima */
+    const AMP = canvas.height * 0.36;
 
-    /* Keyframes [t 0..1, dy -1..1] — triangular, angular, igual que la imagen */
-    /* dy positivo = sube en pantalla (CY - dy*AMP) */
+    /* ---- Capa 1: zigzag angular (picos raros) via keyframes lineales ---- */
     const keys = [
       [0.00,  0.00],
-      [0.04, -0.08],  /* pequeño dip inicial */
-      [0.12,  0.08],
-      [0.18,  0.90],  /* spike dominante izquierda */
-      [0.24, -0.70],  /* valle profundo */
-      [0.30,  0.55],  /* primera oscilacion derecha */
-      [0.37, -0.58],
-      [0.43,  0.68],
-      [0.50, -0.52],
-      [0.57,  0.63],
-      [0.63, -0.48],
-      [0.70,  0.58],
-      [0.77, -0.42],
-      [0.84,  0.32],
-      [0.91, -0.18],
-      [0.96,  0.08],
+      [0.06, -0.10],
+      [0.12,  0.18],  /* pre-spike irregular */
+      [0.18, -0.22],
+      [0.23,  0.14],
+      [0.28, -0.08],  /* zona tranquila antes del spike */
+      [0.34,  0.06],
+      [0.37, -0.05],
+      [0.40,  0.28],  /* post-spike recovery zigzag */
+      [0.46, -0.60],  /* picos raros comienzan */
+      [0.52,  0.65],
+      [0.57, -0.56],
+      [0.63,  0.60],
+      [0.68, -0.52],
+      [0.74,  0.55],
+      [0.80, -0.44],
+      [0.86,  0.36],
+      [0.92, -0.18],
+      [0.97,  0.07],
       [1.00,  0.00],
     ];
 
@@ -1022,11 +1029,20 @@ body::before {{           /* fondo real: z-index -2, debajo del canvas */
 
     const pts = [];
     for (let x = 0; x <= W; x += 2) {{
-      const t     = x / W;
-      const env   = Math.sin(t * Math.PI);        /* fade en bordes */
-      const dy    = interp(t) * env;
-      const jitter = (Math.random() - 0.5) * canvas.height * 0.018 * env;
-      pts.push([x, CY - dy * AMP + jitter]);
+      const t   = x / W;
+      const env = Math.sin(t * Math.PI);
+
+      /* capa angular */
+      const angular = interp(t) * env * AMP;
+
+      /* ---- Capa 2: pulso grande gaussiano (suave, dominante) ---- */
+      const spike  = gauss(x, W * 0.35, W * 0.016, -canvas.height * 0.44); /* sube */
+      const sDip   = gauss(x, W * 0.37, W * 0.013,  canvas.height * 0.20); /* baja tras spike */
+      const pBump  = gauss(x, W * 0.28, W * 0.022, -canvas.height * 0.09); /* p-wave */
+
+      const jitter = (Math.random() - 0.5) * canvas.height * 0.022 * env;
+
+      pts.push([x, CY - angular + spike + sDip + pBump + jitter]);
     }}
     return pts;
   }}
