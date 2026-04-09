@@ -700,52 +700,73 @@ body {{
       </filter>
     </defs>
     <!--
-      Pixel hand: 4 dedos (x1-3, x4-6, x7-9, x10-12) arriba y=0-5
       Palma: x1-13, y5-13
-      Pulgar: x-1 a x1, y7-10 (sobresale a la izquierda)
+      Dedo1 (indice):  x1-3,  top y=0  (mas alto)
+      Dedo2 (medio):   x4-6,  top y=1
+      Dedo3 (anular):  x7-9,  top y=2
+      Dedo4 (menique): x10-12 top y=3  (mas corto)
+      Pulgar: x-1 a x1, y7-10
+
+      Path clockwise:
+      M1,0 -> top-left D1
+      H3   -> top D1
+      V5   -> baja D1 derecha hasta palma
+      H4   -> cruza gap, llega base D2
+      V1   -> SUBE a top D2
+      H6   -> top D2
+      V5   -> baja D2 derecha
+      H7   -> cruza gap, base D3
+      V2   -> SUBE a top D3
+      H9   -> top D3
+      V5   -> baja D3 derecha
+      H10  -> cruza gap, base D4
+      V3   -> SUBE a top D4
+      H12  -> top D4
+      V5   -> baja D4 derecha hasta palma
+      H13  -> palma esquina top-right
+      V13  -> baja palma right
+      H1   -> palma bottom
+      V10  -> sube left hasta base pulgar
+      H-1  -> pulgar izquierda
+      V7   -> sube pulgar
+      H1   -> vuelve a palma
+      Z    -> cierra subiendo left D1 a (1,0)
     -->
 
-    <!-- CAPA 1: sombra 3D desplazada +0.7,+0.7 -->
+    <!-- CAPA 1: sombra 3D -->
     <path fill="#0369a1" transform="translate(0.7,0.7)"
-      d="M1,0 H3 V5 H4 V0 H6 V5 H7 V0 H9 V5 H10 V0 H12 V5
+      d="M1,0 H3 V5 H4 V1 H6 V5 H7 V2 H9 V5 H10 V3 H12 V5
          H13 V13 H1 V10 H-1 V7 H1 Z"/>
 
-    <!-- CAPA 2: forma principal azul -->
+    <!-- CAPA 2: forma azul principal -->
     <path fill="#38bdf8" filter="url(#hglow)"
-      d="M1,0 H3 V5 H4 V0 H6 V5 H7 V0 H9 V5 H10 V0 H12 V5
+      d="M1,0 H3 V5 H4 V1 H6 V5 H7 V2 H9 V5 H10 V3 H12 V5
          H13 V13 H1 V10 H-1 V7 H1 Z"/>
 
-    <!-- CAPA 3: interior blanco (inset 0.4 por todos lados) -->
+    <!-- CAPA 3: interior blanco (inset 0.4) -->
     <path fill="white"
-      d="M1.4,0.4 H2.6 V5 H4.4 V0.4 H5.6 V5 H7.4 V0.4 H8.6 V5
-         H10.4 V0.4 H11.6 V5 H12.6 V12.6 H1.4 V9.6 H-0.6 V7.4
+      d="M1.4,0.4 H2.6 V5 H4.4 V1.4 H5.6 V5 H7.4 V2.4 H8.6 V5
+         H10.4 V3.4 H11.6 V5 H12.6 V12.6 H1.4 V9.6 H-0.6 V7.4
          H1.4 Z"/>
 
-    <!-- Separadores entre dedos (azul sobre blanco = ranura visible) -->
-    <rect x="3" y="0.4" width="1" height="4.6" fill="#38bdf8"/>
-    <rect x="6" y="0.4" width="1" height="4.6" fill="#38bdf8"/>
-    <rect x="9" y="0.4" width="1" height="4.6" fill="#38bdf8"/>
-
-    <!-- Knuckles: lineas horizontales suaves en la palma -->
+    <!-- Knuckles en la palma -->
     <line x1="1.4" y1="6.0" x2="12.6" y2="6.0"
           stroke="#93c5fd" stroke-width="0.22" opacity="0.7"/>
     <line x1="1.4" y1="7.8" x2="12.6" y2="7.8"
           stroke="#93c5fd" stroke-width="0.15" opacity="0.4"/>
 
-    <!-- Highlights: luz desde arriba-izquierda -->
-    <!-- top de cada dedo -->
-    <rect x="1.4" y="0.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.75"/>
-    <rect x="4.4" y="0.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.75"/>
-    <rect x="7.4" y="0.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.75"/>
-    <rect x="10.4" y="0.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.75"/>
-    <!-- borde izquierdo: dedos + palma + pulgar -->
+    <!-- Highlights: luz top de cada dedo (distintas alturas) -->
+    <rect x="1.4"  y="0.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.8"/>
+    <rect x="4.4"  y="1.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.8"/>
+    <rect x="7.4"  y="2.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.8"/>
+    <rect x="10.4" y="3.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.8"/>
+    <!-- Highlights: borde izquierdo (luz lateral) -->
     <rect x="1.4"  y="0.4" width="0.28" height="4.6"  fill="#e0f7ff" opacity="0.5"/>
-    <rect x="4.4"  y="0.4" width="0.28" height="4.6"  fill="#e0f7ff" opacity="0.5"/>
-    <rect x="7.4"  y="0.4" width="0.28" height="4.6"  fill="#e0f7ff" opacity="0.5"/>
-    <rect x="10.4" y="0.4" width="0.28" height="4.6"  fill="#e0f7ff" opacity="0.5"/>
+    <rect x="4.4"  y="1.4" width="0.28" height="3.6"  fill="#e0f7ff" opacity="0.5"/>
+    <rect x="7.4"  y="2.4" width="0.28" height="2.6"  fill="#e0f7ff" opacity="0.5"/>
+    <rect x="10.4" y="3.4" width="0.28" height="1.6"  fill="#e0f7ff" opacity="0.5"/>
     <rect x="-0.6" y="7.4" width="0.28" height="2.2"  fill="#e0f7ff" opacity="0.5"/>
     <rect x="1.4"  y="5"   width="0.28" height="7.6"  fill="#e0f7ff" opacity="0.35"/>
-    <!-- borde superior palma -->
     <rect x="1.4"  y="5"   width="11.2" height="0.28" fill="#e0f7ff" opacity="0.4"/>
   </svg>
   <span class="btn-label">e-PULSE</span>
