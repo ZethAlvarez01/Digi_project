@@ -495,7 +495,7 @@ body {{
 
 /* ---- Marco exterior ---- */
 .board-frame {{
-  padding: {cube_s}px;
+  padding: {qr_pad}px;
   background: #f2e8ff;
   border: {cube_s}px solid #000;
   box-shadow:
@@ -980,11 +980,13 @@ def generate_qr_html(data: str = "【WELCOME TO DIGIMON WORLD】", output: str =
     modules    = build_modules_html(matrix, n, egg, digi)
     rings      = build_pulse_rings_html(matrix, n, digi)
     board_px   = n * CUBE_S
+    qr_pad     = CUBE_S * n // 10  # margen proporcional al tamaño del QR
 
     html = HTML_TEMPLATE.format(
         modules_html=modules,
         pulse_rings_html=rings,
         board_px=board_px,
+        qr_pad=qr_pad,
         cube_s=CUBE_S,
         cube_h=CUBE_H,
         base_h=BASE_H,
