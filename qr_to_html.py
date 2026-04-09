@@ -107,10 +107,9 @@ CUBE_S    = 22    # px — ancho/alto de cada módulo en XY
 CUBE_H    = 26    # px — altura de 1 capa (unidad de altura del huevo)
 BASE_H    = CUBE_H  # altura base: 1 capa (QR plano)
 
-# Offset para centrar el huevo 12×12 dentro del QR 21×21
-# (21 - 12) // 2 = 4  → el huevo ocupa cols/rows 4..15
+# Offset para centrar el huevo 12×12 dentro del QR (se recalcula con n real)
 EGG_N     = 12
-EGG_OFF   = (21 - EGG_N) // 2   # = 4  → egg ocupa rows/cols 4..15
+EGG_OFF   = (21 - EGG_N) // 2   # default v1; se sobreescribe en generate_qr_html
 
 GLOW1 = "#b400ff"
 GLOW2 = "#7700aa"
@@ -974,6 +973,10 @@ def generate_qr_html(data: str = "【WELCOME TO DIGIMON WORLD】", output: str =
     qr.make(fit=True)
     matrix = qr.get_matrix()
     n = len(matrix)
+
+    # Centrar el huevo 12×12 dinámicamente según el tamaño real del QR
+    global EGG_OFF
+    EGG_OFF = (n - EGG_N) // 2
 
     egg        = compute_egg_heights()
     digi       = load_digi_grid()
