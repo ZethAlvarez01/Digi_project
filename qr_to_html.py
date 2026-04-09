@@ -397,7 +397,7 @@ HTML_TEMPLATE = """\
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
 body {{
-  background: #1a3a20;
+  background: #000000;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -477,6 +477,15 @@ body {{
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100vw;
+  height: 100vh;
+}}
+
+/* Contenedor de escala responsiva */
+.scale-container {{
+  transform-style: preserve-3d;
+  transform: scale(var(--board-scale, 1));
+  transform-origin: center center;
 }}
 
 .board-wrapper {{
@@ -675,12 +684,23 @@ body {{
 .pulse-ring.qr-inactive .face.right  {{ background: linear-gradient(to right,  {i_right} 0%, {i_back} 100%); }}
 .pulse-ring.qr-inactive .face.left   {{ background: linear-gradient(to left,   {i_left}  0%, {i_back} 100%); }}
 .pulse-ring.qr-inactive .face.back   {{ background: linear-gradient(to top,    {i_front} 0%, {i_back} 100%); }}
+/* ---- Responsivo ---- */
+@media (max-width: 600px) {{
+  .btn-label {{ font-size: 20px; }}
+  .btn-hand  {{ width: 54px; }}
+  .btn-egg   {{ bottom: 14px; gap: 4px; }}
+}}
+@media (max-width: 380px) {{
+  .btn-label {{ font-size: 16px; }}
+  .btn-hand  {{ width: 44px; }}
+}}
 </style>
 </head>
 <body>
 
 <div class="scene">
-  <div class="board-wrapper" id="wrapper">
+  <div class="scale-container" id="scaler">
+    <div class="board-wrapper" id="wrapper">
     <div class="board-frame">
       <div class="board" id="board">
 {modules_html}
@@ -688,9 +708,8 @@ body {{
       </div>
     </div>
   </div>
+  </div>
 </div>
-
-<div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <button class="btn-egg" id="btn">
   <svg class="btn-hand" viewBox="-2 2.5 13 12.5" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -742,7 +761,6 @@ body {{
   </svg>
   <span class="btn-label">e-PULSE</span>
 </button>
-</div>
 
 <script>
 /* ---- Partículas ---- */
@@ -951,6 +969,18 @@ body {{
     }}
     btn.classList.toggle("egg-on", eggVisible);
   }});
+}})();
+/* ---- Responsivo: escala el board segun viewport ---- */
+(function() {{
+  const BOARD_PX = {board_px} + 104;  /* board + padding*2 + border*2 */
+  const root     = document.documentElement;
+  function updateScale() {{
+    const vw    = Math.min(window.innerWidth, window.innerHeight * 1.4);
+    const scale = Math.min(1, (vw * 0.88) / BOARD_PX);
+    root.style.setProperty("--board-scale", scale.toFixed(4));
+  }}
+  window.addEventListener("resize", updateScale);
+  updateScale();
 }})();
 </script>
 </body>
