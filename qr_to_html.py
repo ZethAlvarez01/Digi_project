@@ -380,12 +380,12 @@ HTML_TEMPLATE = """\
 <style>
 @property --h {{
   syntax: "<length>";
-  inherits: false;
+  inherits: true;
   initial-value: {base_h}px;
 }}
 @property --bot {{
   syntax: "<length>";
-  inherits: false;
+  inherits: true;
   initial-value: 0px;
 }}
 @property --hf2 {{
@@ -517,8 +517,6 @@ body {{
 .face {{
   position: absolute;
   transform-style: preserve-3d;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }}
 
 /* TOP — siempre sube a var(--h) */
