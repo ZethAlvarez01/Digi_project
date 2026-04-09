@@ -220,18 +220,23 @@ def build_pulse_rings_html(matrix: list[list[bool]], n: int,
         delta     = get_ring_delta(f1, f2)
         delta_set = set(delta)
 
+        # Z-mapping: la fila del patrón que corresponde a este nivel Z
+        # er_pattern = 11 - z_level_sin_lift  (mismo que make_lateral_stops usa)
+        er_pattern = 11 - z_idx
+
         for er, ec in delta:
             x, y = egg_to_board_px(er, ec)
             br, bc = er + EGG_OFF, ec + EGG_OFF
             qr_cls = "qr-active" if (0 <= br < n and 0 <= bc < n
                                      and matrix[br][bc]) else "qr-inactive"
 
-            # Color lateral de los rings: usa F1 si dentro del egg, blanco si fuera
-            if grid_f1 and 0 <= er < EGG_N and 0 <= ec < EGG_N:
-                sf1 = grid_f1[er][ec]
-                sf2 = grid_f2[er][ec] if grid_f2 else sf1
+            # Color del ring: fila del patrón = er_pattern (Z-mapped), columna = ec
+            # ec puede salir del grid (rings que expanden más allá de 12×12)
+            if grid_f1 and 0 <= er_pattern < EGG_N and 0 <= ec < EGG_N:
+                sf1 = grid_f1[er_pattern][ec]
+                sf2 = grid_f2[er_pattern][ec] if grid_f2 else sf1
             else:
-                sf1 = sf2 = 3  # blanco (style 3) por defecto para celdas fuera del grid
+                sf1 = sf2 = 3  # blanco por defecto (fuera de rango del patrón)
             digi_side_f1 = _DIGI_COLOR.get(sf1, "#f0f0f0")
             digi_side_f2 = _DIGI_COLOR.get(sf2, "#f0f0f0")
 
