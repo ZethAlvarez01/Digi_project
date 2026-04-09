@@ -448,15 +448,14 @@ body {{
 
 /* ---- Manita pixel-art ---- */
 .btn-hand {{
-  width: 64px;
-  height: 70px;
+  width: 72px;
   display: block;
 }}
 
 /* ---- Texto e-PULSE ---- */
 .btn-label {{
   font-family: "Arial Black", "Arial", sans-serif;
-  font-size: 17px;
+  font-size: 26px;
   font-weight: 900;
   font-style: italic;
   color: #bae6fd;
@@ -693,49 +692,61 @@ body {{
 
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <button class="btn-egg" id="btn">
-  <svg class="btn-hand" viewBox="0 0 14 13" xmlns="http://www.w3.org/2000/svg">
+  <svg class="btn-hand" viewBox="-1.5 -0.5 16.5 15.5" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <filter id="hglow" x="-30%" y="-30%" width="160%" height="160%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="0.35" result="b"/>
+      <filter id="hglow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="0.3" result="b"/>
         <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
     </defs>
-    <!-- Sombra 3D inferior-derecha -->
-    <g fill="#0369a1" transform="translate(0.5,0.5)">
-      <rect x="1" y="0" width="2" height="5"/>
-      <rect x="4" y="0" width="2" height="5"/>
-      <rect x="7" y="0" width="2" height="5"/>
-      <rect x="10" y="0" width="2" height="5"/>
-      <rect x="1" y="4" width="11" height="8"/>
-      <rect x="0" y="5" width="2" height="4"/>
-    </g>
-    <!-- Capa media (borde azul) -->
-    <g fill="#38bdf8" filter="url(#hglow)">
-      <rect x="1" y="0" width="2" height="5"/>
-      <rect x="4" y="0" width="2" height="5"/>
-      <rect x="7" y="0" width="2" height="5"/>
-      <rect x="10" y="0" width="2" height="5"/>
-      <rect x="1" y="4" width="11" height="8"/>
-      <rect x="0" y="5" width="2" height="4"/>
-    </g>
-    <!-- Interior blanco -->
-    <g fill="white">
-      <rect x="1.35" y="0.35" width="1.3" height="4.3"/>
-      <rect x="4.35" y="0.35" width="1.3" height="4.3"/>
-      <rect x="7.35" y="0.35" width="1.3" height="4.3"/>
-      <rect x="10.35" y="0.35" width="1.3" height="4.3"/>
-      <rect x="1.35" y="4.35" width="10.3" height="7.3"/>
-      <rect x="0.35" y="5.35" width="1.3" height="3.3"/>
-    </g>
-    <!-- Highlight top-left (simula luz) -->
-    <g fill="#e0f7ff" opacity="0.55">
-      <rect x="1.35" y="0.35" width="0.55" height="4.3"/>
-      <rect x="4.35" y="0.35" width="0.55" height="4.3"/>
-      <rect x="7.35" y="0.35" width="0.55" height="4.3"/>
-      <rect x="10.35" y="0.35" width="0.55" height="4.3"/>
-      <rect x="1.35" y="4.35" width="10.3" height="0.55"/>
-      <rect x="0.35" y="5.35" width="1.3" height="0.55"/>
-    </g>
+    <!--
+      Pixel hand: 4 dedos (x1-3, x4-6, x7-9, x10-12) arriba y=0-5
+      Palma: x1-13, y5-13
+      Pulgar: x-1 a x1, y7-10 (sobresale a la izquierda)
+    -->
+
+    <!-- CAPA 1: sombra 3D desplazada +0.7,+0.7 -->
+    <path fill="#0369a1" transform="translate(0.7,0.7)"
+      d="M1,0 H3 V5 H4 V0 H6 V5 H7 V0 H9 V5 H10 V0 H12 V5
+         H13 V13 H1 V10 H-1 V7 H1 Z"/>
+
+    <!-- CAPA 2: forma principal azul -->
+    <path fill="#38bdf8" filter="url(#hglow)"
+      d="M1,0 H3 V5 H4 V0 H6 V5 H7 V0 H9 V5 H10 V0 H12 V5
+         H13 V13 H1 V10 H-1 V7 H1 Z"/>
+
+    <!-- CAPA 3: interior blanco (inset 0.4 por todos lados) -->
+    <path fill="white"
+      d="M1.4,0.4 H2.6 V5 H4.4 V0.4 H5.6 V5 H7.4 V0.4 H8.6 V5
+         H10.4 V0.4 H11.6 V5 H12.6 V12.6 H1.4 V9.6 H-0.6 V7.4
+         H1.4 Z"/>
+
+    <!-- Separadores entre dedos (azul sobre blanco = ranura visible) -->
+    <rect x="3" y="0.4" width="1" height="4.6" fill="#38bdf8"/>
+    <rect x="6" y="0.4" width="1" height="4.6" fill="#38bdf8"/>
+    <rect x="9" y="0.4" width="1" height="4.6" fill="#38bdf8"/>
+
+    <!-- Knuckles: lineas horizontales suaves en la palma -->
+    <line x1="1.4" y1="6.0" x2="12.6" y2="6.0"
+          stroke="#93c5fd" stroke-width="0.22" opacity="0.7"/>
+    <line x1="1.4" y1="7.8" x2="12.6" y2="7.8"
+          stroke="#93c5fd" stroke-width="0.15" opacity="0.4"/>
+
+    <!-- Highlights: luz desde arriba-izquierda -->
+    <!-- top de cada dedo -->
+    <rect x="1.4" y="0.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.75"/>
+    <rect x="4.4" y="0.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.75"/>
+    <rect x="7.4" y="0.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.75"/>
+    <rect x="10.4" y="0.4" width="1.2" height="0.45" fill="#e0f7ff" opacity="0.75"/>
+    <!-- borde izquierdo: dedos + palma + pulgar -->
+    <rect x="1.4"  y="0.4" width="0.28" height="4.6"  fill="#e0f7ff" opacity="0.5"/>
+    <rect x="4.4"  y="0.4" width="0.28" height="4.6"  fill="#e0f7ff" opacity="0.5"/>
+    <rect x="7.4"  y="0.4" width="0.28" height="4.6"  fill="#e0f7ff" opacity="0.5"/>
+    <rect x="10.4" y="0.4" width="0.28" height="4.6"  fill="#e0f7ff" opacity="0.5"/>
+    <rect x="-0.6" y="7.4" width="0.28" height="2.2"  fill="#e0f7ff" opacity="0.5"/>
+    <rect x="1.4"  y="5"   width="0.28" height="7.6"  fill="#e0f7ff" opacity="0.35"/>
+    <!-- borde superior palma -->
+    <rect x="1.4"  y="5"   width="11.2" height="0.28" fill="#e0f7ff" opacity="0.4"/>
   </svg>
   <span class="btn-label">e-PULSE</span>
 </button>
