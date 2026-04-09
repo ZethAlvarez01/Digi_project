@@ -525,6 +525,7 @@ body {{
 
 /* Rings: solo laterales */
 .pulse-ring .face {{ /* snap instantáneo */ }}
+.pulse-ring.digi .face.top   {{ background: var(--digi-front, #f0f0f0) !important; }}
 .pulse-ring.digi .face.front {{ background: var(--digi-front, #f0f0f0) !important; }}
 .pulse-ring.digi .face.right {{ background: var(--digi-right, #f0f0f0) !important; }}
 .pulse-ring.digi .face.left  {{ background: var(--digi-left,  #f0f0f0) !important; }}
