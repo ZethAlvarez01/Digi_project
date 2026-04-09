@@ -350,10 +350,9 @@ def build_modules_html(matrix: list[list[bool]], n: int,
 
             parts.append(
                 f'<div class="module {cls}" '
-                f'style="left:{x}px;top:{y}px;" '
+                f'style="left:{x}px;top:{y}px;--hf2:{f2h_px}px;" '
                 f'data-target="{col_h_px}" '
                 f'data-bot="{bot_px}" '
-                f'data-f2h="{f2h_px}" '
                 f'data-up-delay="{up_delay}" '
                 f'data-down-delay="{down_delay}" '
                 f'{digi_attrs}>'
@@ -381,13 +380,18 @@ HTML_TEMPLATE = """\
 <style>
 @property --h {{
   syntax: "<length>";
-  inherits: true;
+  inherits: false;
   initial-value: {base_h}px;
 }}
 @property --bot {{
   syntax: "<length>";
-  inherits: true;
+  inherits: false;
   initial-value: 0px;
+}}
+@property --hf2 {{
+  syntax: "<length>";
+  inherits: false;
+  initial-value: {base_h}px;
 }}
 
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
@@ -457,6 +461,7 @@ body {{
   transform: rotateX(60deg) rotateZ(-15deg);
   animation: float 7s ease-in-out infinite;
   cursor: grab;
+  will-change: transform;
 }}
 .board-wrapper.dragging {{ cursor: grabbing; }}
 
@@ -471,9 +476,8 @@ body {{
   background: #fff;
   border: {cube_s}px solid #000;
   box-shadow:
-    0 0 6px 3px {glow1},
-    0 0 18px 8px {glow2},
-    inset 0 0 6px 3px {glow1};
+    0 0 10px 4px {glow1},
+    0 0 28px 10px {glow2};
   transform-style: preserve-3d;
   overflow: visible;
 }}
@@ -499,10 +503,22 @@ body {{
   transform: translateZ(var(--bot));
 }}
 
+/* Frame2: --hf2 bakeado inline en cada módulo; !important gana sobre inline --h */
+.board.frame2 .module {{
+  --h: var(--hf2) !important;
+}}
+/* Switching: bloquea cualquier transición activa durante el snap */
+.board.switching .module,
+.board.switching .module .face {{
+  transition: none !important;
+}}
+
 /* ---- Caras base ---- */
 .face {{
   position: absolute;
   transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }}
 
 /* TOP — siempre sube a var(--h) */
@@ -517,20 +533,33 @@ body {{
 /* Caras laterales */
 
 /* Digi-Egg colorized — clase .digi añadida por JS tras el reveal */
+/* F1 (default) */
 .module.digi .face.top   {{ background: var(--digi-top,   #f0fff0) !important; }}
 .module.digi .face.front {{ background: var(--digi-front, #f0f0f0) !important; }}
 .module.digi .face.right {{ background: var(--digi-right, #f0f0f0) !important; }}
 .module.digi .face.left  {{ background: var(--digi-left,  #f0f0f0) !important; }}
 .module.digi .face.back  {{ background: var(--digi-back,  #f0f0f0) !important; }}
+/* F2 — sobrescribe via clase en el board */
+.board.frame2 .module.digi .face.top   {{ background: var(--digi2-top,   #f0fff0) !important; }}
+.board.frame2 .module.digi .face.front {{ background: var(--digi2-front, #f0f0f0) !important; }}
+.board.frame2 .module.digi .face.right {{ background: var(--digi2-right, #f0f0f0) !important; }}
+.board.frame2 .module.digi .face.left  {{ background: var(--digi2-left,  #f0f0f0) !important; }}
+.board.frame2 .module.digi .face.back  {{ background: var(--digi2-back,  #f0f0f0) !important; }}
 
-/* Rings: solo laterales */
-.pulse-ring .face {{ /* snap instantáneo */ }}
+/* Rings: F1 default */
 .pulse-ring.digi .face.top    {{ background: var(--digi-front, #f0f0f0) !important; }}
 .pulse-ring.digi .face.bottom {{ background: var(--digi-front, #f0f0f0) !important; }}
 .pulse-ring.digi .face.front  {{ background: var(--digi-front, #f0f0f0) !important; }}
-.pulse-ring.digi .face.right {{ background: var(--digi-right, #f0f0f0) !important; }}
-.pulse-ring.digi .face.left  {{ background: var(--digi-left,  #f0f0f0) !important; }}
-.pulse-ring.digi .face.back  {{ background: var(--digi-back,  #f0f0f0) !important; }}
+.pulse-ring.digi .face.right  {{ background: var(--digi-right, #f0f0f0) !important; }}
+.pulse-ring.digi .face.left   {{ background: var(--digi-left,  #f0f0f0) !important; }}
+.pulse-ring.digi .face.back   {{ background: var(--digi-back,  #f0f0f0) !important; }}
+/* Rings F2 — via clase en el board */
+.board.frame2 .pulse-ring.digi .face.top    {{ background: var(--digi2-front, #f0f0f0) !important; }}
+.board.frame2 .pulse-ring.digi .face.bottom {{ background: var(--digi2-front, #f0f0f0) !important; }}
+.board.frame2 .pulse-ring.digi .face.front  {{ background: var(--digi2-front, #f0f0f0) !important; }}
+.board.frame2 .pulse-ring.digi .face.right  {{ background: var(--digi2-right, #f0f0f0) !important; }}
+.board.frame2 .pulse-ring.digi .face.left   {{ background: var(--digi2-left,  #f0f0f0) !important; }}
+.board.frame2 .pulse-ring.digi .face.back   {{ background: var(--digi2-back,  #f0f0f0) !important; }}
 
 /* BOTTOM — cara inferior de los ring cubes */
 .face.bottom {{
@@ -646,7 +675,7 @@ body {{
 <script>
 /* ---- Partículas ---- */
 (function() {{
-  for (let i = 0; i < 28; i++) {{
+  for (let i = 0; i < 12; i++) {{
     const el = document.createElement("div");
     el.className = "particle";
     const s = 2 + Math.random();
@@ -732,124 +761,119 @@ body {{
 /* ---- Egg reveal + Pulse 1s ---- */
 (function() {{
   const btn     = document.getElementById("btn");
-  const modules = document.querySelectorAll(".module");
-  const rings   = document.querySelectorAll(".pulse-ring");
+  const board   = document.querySelector(".board");
+  const modules = board.querySelectorAll(".module");
+  const rings   = board.querySelectorAll(".pulse-ring");
   const BASE    = {base_h};
+  const CUBE_H_JS = {cube_h};
 
-  let eggVisible = false;
-  let frame2     = false;   // false = Frame1, true = Frame2
-  let timer      = null;
+  let eggVisible  = false;
+  let frame2      = false;
+  let timer       = null;
+  let colorsInited = false;
 
-  const CASCADE   = "--h .55s cubic-bezier(.34,1.56,.64,1), --bot .55s cubic-bezier(.34,1.56,.64,1)";
-  const CUBE_H_JS = {cube_h};  // px por nivel Z — sync con Python
+  const CASCADE = "--h .55s cubic-bezier(.34,1.56,.64,1), --bot .55s cubic-bezier(.34,1.56,.64,1)";
 
-  // Construye los 4 gradientes para las caras laterales a partir de
-  // un array de colores [er=11-bot … er=12-bot-col_h] (CSS top→bottom)
+  /* Construye gradiente para las 4 caras laterales desde array de colores */
   function buildGrads(stops) {{
     const h   = CUBE_H_JS;
-    const seg = stops.map((c, i) => `${{c}} ${{i * h}}px ${{(i + 1) * h}}px`).join(',');
+    const seg = stops.map((c, i) => `${{c}} ${{i*h}}px ${{(i+1)*h}}px`).join(",");
     return {{
-      front: `linear-gradient(to bottom,${{seg}})`,  // CSS top→bottom = low Z → high Z
-      right: `linear-gradient(to right,${{seg}})`,   // same horizontal
-      left:  `linear-gradient(to left,${{seg}})`,    // mirrored
-      back:  `linear-gradient(to top,${{seg}})`,     // reversed (cara trasera)
+      front: `linear-gradient(to bottom,${{seg}})`,
+      right: `linear-gradient(to right,${{seg}})`,
+      left:  `linear-gradient(to left,${{seg}})`,
+      back:  `linear-gradient(to top,${{seg}})`,
     }};
   }}
 
-  function applyDigiGrads(m, toF2) {{
-    const stopsAttr = toF2 ? "digiStopsF2" : "digiStopsF1";
-    const raw = m.dataset[stopsAttr];
-    if (!raw) return;
-    const stops = raw.split("|");
-    const g     = buildGrads(stops);
-    m.style.setProperty("--digi-front", g.front);
-    m.style.setProperty("--digi-right", g.right);
-    m.style.setProperty("--digi-left",  g.left);
-    m.style.setProperty("--digi-back",  g.back);
-    // Top face: usa el color del frame correcto
-    const topColor = toF2 ? m.dataset.digiTopF2 : m.dataset.digiTop;
-    if (topColor) m.style.setProperty("--digi-top", topColor);
-  }}
-
-  function applyDigiSide(toF2) {{
-    modules.forEach(m => applyDigiGrads(m, toF2));
-    // rings: actualizar color plano al cambiar frame
+  /* Bake colores F1+F2 como CSS vars en cada elemento — se llama UNA SOLA VEZ.
+     setFrame ya no toca colores; el CSS toggle de .frame2 en .board lo hace. */
+  function initDigiColors() {{
+    if (colorsInited) return;
+    colorsInited = true;
+    modules.forEach(m => {{
+      if (!m.dataset.digiStopsF1) return;
+      const g1 = buildGrads(m.dataset.digiStopsF1.split("|"));
+      const g2 = buildGrads(m.dataset.digiStopsF2.split("|"));
+      m.style.setProperty("--digi-top",    m.dataset.digiTop);
+      m.style.setProperty("--digi-front",  g1.front);
+      m.style.setProperty("--digi-right",  g1.right);
+      m.style.setProperty("--digi-left",   g1.left);
+      m.style.setProperty("--digi-back",   g1.back);
+      m.style.setProperty("--digi2-top",   m.dataset.digiTopF2);
+      m.style.setProperty("--digi2-front", g2.front);
+      m.style.setProperty("--digi2-right", g2.right);
+      m.style.setProperty("--digi2-left",  g2.left);
+      m.style.setProperty("--digi2-back",  g2.back);
+    }});
     rings.forEach(r => {{
-      const c = toF2 ? r.dataset.digiSideF2 : r.dataset.digiSideF1;
-      if (!c) return;
-      r.style.setProperty("--digi-front", c);
-      r.style.setProperty("--digi-right", c);
-      r.style.setProperty("--digi-left",  c);
-      r.style.setProperty("--digi-back",  c);
+      if (!r.dataset.digiSideF1) return;
+      const c1 = r.dataset.digiSideF1, c2 = r.dataset.digiSideF2 || c1;
+      r.style.setProperty("--digi-front",  c1);
+      r.style.setProperty("--digi-right",  c1);
+      r.style.setProperty("--digi-left",   c1);
+      r.style.setProperty("--digi-back",   c1);
+      r.style.setProperty("--digi2-front", c2);
+      r.style.setProperty("--digi2-right", c2);
+      r.style.setProperty("--digi2-left",  c2);
+      r.style.setProperty("--digi2-back",  c2);
     }});
   }}
 
+  /* setFrame: 0 mutations en módulos — solo un toggle de clase en el board */
   function setFrame(toF2) {{
     frame2 = toF2;
-    modules.forEach(m => {{
-      m.style.transition      = "none";
-      m.style.transitionDelay = "0ms";
-      m.style.setProperty("--h", (toF2 ? m.dataset.f2h : m.dataset.target) + "px");
-    }});
+    board.classList.add("switching");          // bloquea transiciones activas
+    board.classList.toggle("frame2", toF2);    // CSS override de --h y colores
     rings.forEach(r => r.classList.toggle("visible", toF2));
-    if (eggVisible) applyDigiSide(toF2);
+    requestAnimationFrame(() => board.classList.remove("switching"));
   }}
 
   function revealEgg() {{
+    initDigiColors();
     modules.forEach(m => {{
       m.style.transition      = CASCADE;
       m.style.transitionDelay = m.dataset.upDelay + "ms";
       m.style.setProperty("--h",   m.dataset.target + "px");
       m.style.setProperty("--bot", m.dataset.bot    + "px");
     }});
-    // Colorize: top color + gradientes laterales, stagger row-by-row
+    /* Stagger clase .digi por fila */
     modules.forEach((m, i) => {{
       if (!m.dataset.digiStopsF1) return;
-      const row   = Math.floor(i / 21);
-      const delay = 900 + row * 60;
-      setTimeout(() => {{
-        m.style.setProperty("--digi-top", m.dataset.digiTop);
-        applyDigiGrads(m, frame2);
-        m.classList.add("digi");
-      }}, delay);
+      const delay = 900 + Math.floor(i / 21) * 60;
+      setTimeout(() => m.classList.add("digi"), delay);
     }});
-    // Rings: color plano (un solo nivel Z)
-    rings.forEach(r => {{
-      if (!r.dataset.digiSideF1) return;
-      r.style.setProperty("--digi-front", r.dataset.digiSideF1);
-      r.style.setProperty("--digi-right", r.dataset.digiSideF1);
-      r.style.setProperty("--digi-left",  r.dataset.digiSideF1);
-      r.style.setProperty("--digi-back",  r.dataset.digiSideF1);
-      r.classList.add("digi");
-    }});
+    rings.forEach(r => r.classList.add("digi"));
   }}
 
   function hideEgg() {{
-    modules.forEach(m => {{
-      m.style.transition      = CASCADE;
-      m.style.transitionDelay = m.dataset.downDelay + "ms";
-      m.style.setProperty("--h",   BASE + "px");
-      m.style.setProperty("--bot", "0px");
-      m.classList.remove("digi");
+    /* Eliminar .frame2 antes del hide para que inline --h domine */
+    board.classList.add("switching");
+    board.classList.remove("frame2");
+    requestAnimationFrame(() => {{
+      board.classList.remove("switching");
+      modules.forEach(m => {{
+        m.style.transition      = CASCADE;
+        m.style.transitionDelay = m.dataset.downDelay + "ms";
+        m.style.setProperty("--h",   BASE + "px");
+        m.style.setProperty("--bot", "0px");
+        m.classList.remove("digi");
+      }});
+      rings.forEach(r => r.classList.remove("digi"));
     }});
-    rings.forEach(r => r.classList.remove("digi"));
   }}
 
   btn.addEventListener("click", () => {{
     eggVisible = !eggVisible;
-
     if (eggVisible) {{
       revealEgg();
-      // arranca el pulso al segundo, repite cada segundo
       timer = setInterval(() => setFrame(!frame2), 1000);
     }} else {{
-      clearInterval(timer);
-      timer = null;
-      setFrame(false);   // reset rings y alturas a F1
+      clearInterval(timer); timer = null;
+      frame2 = false;
       hideEgg();
     }}
-
-    btn.textContent = eggVisible ? "🔄 Reset QR" : "🥚 Reveal Egg";
+    btn.textContent  = eggVisible ? "🔄 Reset QR" : "🥚 Reveal Egg";
     btn.style.boxShadow = eggVisible ? "0 0 22px 8px {glow1}" : "0 0 12px 4px {glow2}";
   }});
 }})();
