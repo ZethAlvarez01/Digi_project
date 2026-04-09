@@ -983,28 +983,50 @@ body::before {{           /* fondo real: z-index -2, debajo del canvas */
   window.addEventListener("resize", resize);
   resize();
 
-  function gauss(x, cx, sigma, amp) {{
-    return amp * Math.exp(-0.5 * Math.pow((x - cx) / sigma, 2));
-  }}
-
   function makePoints() {{
     const W   = canvas.width;
     const CY  = canvas.height * 0.5;
-    const MID = W / 2;
+    const AMP = canvas.height * 0.40;  /* amplitud maxima */
+
+    /* Keyframes [t 0..1, dy -1..1] — triangular, angular, igual que la imagen */
+    /* dy positivo = sube en pantalla (CY - dy*AMP) */
+    const keys = [
+      [0.00,  0.00],
+      [0.04, -0.08],  /* pequeño dip inicial */
+      [0.12,  0.08],
+      [0.18,  0.90],  /* spike dominante izquierda */
+      [0.24, -0.70],  /* valle profundo */
+      [0.30,  0.55],  /* primera oscilacion derecha */
+      [0.37, -0.58],
+      [0.43,  0.68],
+      [0.50, -0.52],
+      [0.57,  0.63],
+      [0.63, -0.48],
+      [0.70,  0.58],
+      [0.77, -0.42],
+      [0.84,  0.32],
+      [0.91, -0.18],
+      [0.96,  0.08],
+      [1.00,  0.00],
+    ];
+
+    function interp(t) {{
+      for (let i = 0; i < keys.length - 1; i++) {{
+        if (t >= keys[i][0] && t <= keys[i+1][0]) {{
+          const p = (t - keys[i][0]) / (keys[i+1][0] - keys[i][0]);
+          return keys[i][1] + (keys[i+1][1] - keys[i][1]) * p;
+        }}
+      }}
+      return 0;
+    }}
+
     const pts = [];
     for (let x = 0; x <= W; x += 2) {{
-      const t        = x / W;
-      const env      = Math.sin(t * Math.PI);
-      const distMid  = Math.abs(x - MID);
-      const noMask   = 1 - Math.exp(-0.5 * Math.pow(distMid / (W * 0.08), 2));
-      const noise    = (Math.random() - 0.5) * canvas.height * 0.03 * env * noMask;
-      const baseline = Math.sin(x * 0.025) * canvas.height * 0.02 * env;
-      const pH = canvas.height;
-      const pWave = gauss(x, MID - W*0.15, W*0.028, -pH*0.05);
-      const rWave = gauss(x, MID,           W*0.016, -pH*0.35);
-      const sWave = gauss(x, MID + W*0.028, W*0.014,  pH*0.10);
-      const tWave = gauss(x, MID + W*0.13,  W*0.042, -pH*0.10);
-      pts.push([x, CY + baseline + noise + pWave + rWave + sWave + tWave]);
+      const t     = x / W;
+      const env   = Math.sin(t * Math.PI);        /* fade en bordes */
+      const dy    = interp(t) * env;
+      const jitter = (Math.random() - 0.5) * canvas.height * 0.018 * env;
+      pts.push([x, CY - dy * AMP + jitter]);
     }}
     return pts;
   }}
