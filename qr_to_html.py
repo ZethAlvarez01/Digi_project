@@ -970,6 +970,7 @@ body {{
   }}
 
   btn.addEventListener("click", () => {{
+    if (window._triggerWave) window._triggerWave();
     eggVisible = !eggVisible;
     if (eggVisible) {{
       revealEgg();
@@ -1026,8 +1027,7 @@ body {{
   }}
 
   const btn = document.getElementById("btn");
-  btn.addEventListener("mousedown",  triggerWave);
-  btn.addEventListener("touchstart", triggerWave, {{passive: true}});
+  window._triggerWave = triggerWave;
 }})();
 </script>
 </body>
