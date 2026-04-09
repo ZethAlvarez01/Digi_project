@@ -685,13 +685,6 @@ body {{
   z-index: 99;
   overflow: visible;
 }}
-@keyframes wave-fade {{
-  0%   {{ opacity: 0; }}
-  12%  {{ opacity: 1; }}
-  70%  {{ opacity: 1; }}
-  100% {{ opacity: 0; }}
-}}
-.wave-active {{ animation: wave-fade 950ms ease-out forwards; }}
 </style>
 </head>
 <body>
@@ -987,46 +980,56 @@ body {{
 (function() {{
   const svg  = document.getElementById("pulse-wave");
   const path = document.getElementById("wave-path");
-  const W = 240, H = 54, CY = 27;
+  const W = 240, CY = 27;
+  let   animId = null;
 
   function makeWave() {{
     let d = "";
     for (let x = 0; x <= W; x += 1.8) {{
       const t   = x / W;
-      const env = Math.sin(t * Math.PI);          /* envelope: 0 en bordes */
-      const sine = Math.sin(x * 0.22) * 13 * env;
-      const noise = (Math.random() - 0.5) * 7 * env;
-      const y = CY + sine + noise;
+      const env = Math.sin(t * Math.PI);
+      const y   = CY + Math.sin(x * 0.22) * 13 * env
+                     + (Math.random() - 0.5) * 7 * env;
       d += (x === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
     }}
     return d;
   }}
 
   function triggerWave() {{
-    /* generar nueva onda ruidosa cada vez */
-    path.setAttribute("d", makeWave());
+    /* cancelar animacion previa si sigue corriendo */
+    if (animId) {{ cancelAnimationFrame(animId); animId = null; }}
 
-    /* stroke draw-in */
+    path.setAttribute("d", makeWave());
     const len = path.getTotalLength();
     path.style.strokeDasharray  = len;
     path.style.strokeDashoffset = len;
+    svg.style.opacity = "0";
 
-    /* reset animacion */
-    svg.classList.remove("wave-active");
-    void svg.offsetWidth;
-    svg.classList.add("wave-active");
+    const TOTAL = 950;   /* duracion total ms */
+    const DRAW  = 220;   /* tiempo draw-in ms */
+    const start = performance.now();
 
-    /* animar dashoffset: dibujar en 220ms */
-    let start = null;
-    (function animDash(ts) {{
-      if (!start) start = ts;
-      const p = Math.min((ts - start) / 220, 1);
-      path.style.strokeDashoffset = len * (1 - p);
-      if (p < 1) requestAnimationFrame(animDash);
-    }})(performance.now());
+    function frame(ts) {{
+      const elapsed = ts - start;
+      const t = Math.min(elapsed / TOTAL, 1);
+
+      /* opacidad: fade-in rapido, hold, fade-out suave */
+      let op;
+      if      (t < 0.12) op = t / 0.12;
+      else if (t < 0.70) op = 1;
+      else               op = 1 - (t - 0.70) / 0.30;
+      svg.style.opacity = op;
+
+      /* draw-in del stroke */
+      const drawP = Math.min(elapsed / DRAW, 1);
+      path.style.strokeDashoffset = len * (1 - drawP);
+
+      if (t < 1) {{ animId = requestAnimationFrame(frame); }}
+      else       {{ svg.style.opacity = "0"; animId = null; }}
+    }}
+    animId = requestAnimationFrame(frame);
   }}
 
-  const btn = document.getElementById("btn");
   window._triggerWave = triggerWave;
 }})();
 </script>
