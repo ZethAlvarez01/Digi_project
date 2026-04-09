@@ -231,7 +231,7 @@ def build_pulse_rings_html(matrix: list[list[bool]], n: int,
                 sf1 = grid_f1[er][ec]
                 sf2 = grid_f2[er][ec] if grid_f2 else sf1
             else:
-                sf1 = sf2 = 2  # blanco por defecto
+                sf1 = sf2 = 3  # blanco (style 3) por defecto para celdas fuera del grid
             digi_side_f1 = _DIGI_COLOR.get(sf1, "#f0f0f0")
             digi_side_f2 = _DIGI_COLOR.get(sf2, "#f0f0f0")
 
@@ -762,7 +762,15 @@ body {{
 
   function applyDigiSide(toF2) {{
     modules.forEach(m => applyDigiGrads(m, toF2));
-    // rings: color plano, ya tienen --digi-front del reveal
+    // rings: actualizar color plano al cambiar frame
+    rings.forEach(r => {{
+      const c = toF2 ? r.dataset.digiSideF2 : r.dataset.digiSideF1;
+      if (!c) return;
+      r.style.setProperty("--digi-front", c);
+      r.style.setProperty("--digi-right", c);
+      r.style.setProperty("--digi-left",  c);
+      r.style.setProperty("--digi-back",  c);
+    }});
   }}
 
   function setFrame(toF2) {{
