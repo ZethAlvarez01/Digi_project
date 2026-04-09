@@ -862,7 +862,7 @@ body {{
         m.style.setProperty("--bot", "0px");
         m.classList.remove("digi");
       }});
-      rings.forEach(r => r.classList.remove("digi"));
+      rings.forEach(r => {{ r.classList.remove("digi"); r.classList.remove("visible"); }});
     }});
   }}
 
