@@ -952,7 +952,6 @@ body {{
   }}
 
   btn.addEventListener("click", () => {{
-    if (window._triggerWave) window._triggerWave();
     eggVisible = !eggVisible;
     if (eggVisible) {{
       revealEgg();
@@ -967,6 +966,7 @@ body {{
 }})();
 /* ---- Onda de pulso (Canvas) ---- */
 (function() {{
+  try {{
   const canvas = document.getElementById("pulse-canvas");
   const ctx    = canvas.getContext("2d");
   let   animId = null;
@@ -1050,7 +1050,14 @@ body {{
     animId = requestAnimationFrame(frame);
   }}
 
+  /* listener propio — aislado del click del huevo */
+  const btn = document.getElementById("btn");
+  if (btn) {{
+    btn.addEventListener("click",     triggerWave);
+    btn.addEventListener("touchstart", triggerWave, {{passive:true}});
+  }}
   window._triggerWave = triggerWave;
+  }} catch(e) {{ console.error("[pulse-wave]", e); }}
 }})();
 </script>
 </body>
