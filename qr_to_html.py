@@ -532,13 +532,6 @@ body {{
 /* Caras laterales */
 
 /* Digi-Egg colorized — clase .digi añadida por JS tras el reveal */
-@keyframes digi-in {{
-  from {{ opacity: 0; }}
-  to   {{ opacity: 1; }}
-}}
-.module.digi .face {{
-  animation: digi-in 0.8s ease-out both;
-}}
 /* F1 (default) */
 .module.digi .face.top   {{ background: var(--digi-top,   #f0fff0) !important; }}
 .module.digi .face.front {{ background: var(--digi-front, #f0f0f0) !important; }}
