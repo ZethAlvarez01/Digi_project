@@ -396,7 +396,7 @@ HTML_TEMPLATE = """\
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
 body {{
-  background: #000000;
+  background: transparent;   /* fondo en ::before para liberar z-index */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -405,6 +405,12 @@ body {{
   overflow: hidden;
   user-select: none;
   font-family: sans-serif;
+}}
+body::before {{           /* fondo real: z-index -2, debajo del canvas */
+  content: "";
+  position: fixed; inset: 0;
+  background: #000000;
+  z-index: -2;
 }}
 
 /* ---- Partículas ---- */
@@ -478,8 +484,6 @@ body {{
   justify-content: center;
   width: 100vw;
   height: 100vh;
-  position: relative;
-  z-index: 1;
 }}
   transform-style: preserve-3d;
   transform: rotateX(0deg) rotateZ(0deg);
@@ -682,7 +686,7 @@ body {{
   top: 0; left: 0;
   width: 100vw; height: 100vh;
   pointer-events: none;
-  z-index: 2;
+  z-index: -1;
 }}
 </style>
 </head>
