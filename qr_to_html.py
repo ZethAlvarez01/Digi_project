@@ -1037,8 +1037,8 @@ body::before {{           /* fondo real: z-index -2, debajo del canvas */
       return 0;
     }}
 
-    /* ---- Capa 2: spike gaussiano — posicion+altura varían levemente por click ---- */
-    const spikeCX  = W * (0.35 + (r() - 0.5) * 0.08);   /* ±4% ancho */
+    /* ---- Capa 2: spike gaussiano — posicion libre por toda la onda ---- */
+    const spikeCX  = W * (0.20 + r() * 0.60);   /* 20%–80% del ancho */
     const spikeAmp = canvas.height * (0.44 + (r() - 0.5) * 0.10); /* ±5% alto */
     const dipCX    = spikeCX + W * (0.022 + r() * 0.008);
     const pBumpCX  = spikeCX - W * (0.07  + r() * 0.02);
