@@ -511,16 +511,10 @@ body {{
   height: {cube_s}px;
   top: 0; left: 0;
   transform: translateZ(var(--h));
-  transition: background-color 1.4s ease-out;
+  /* sin transition: snap instantáneo en setFrame */
 }}
 
-/* Caras laterales: transición de color */
-.module .face.front,
-.module .face.right,
-.module .face.left,
-.module .face.back {{
-  transition: background-color 1.4s ease-out;
-}}
+/* Caras laterales */
 
 /* Digi-Egg colorized — clase .digi añadida por JS tras el reveal */
 .module.digi .face.top   {{ background: var(--digi-top,   #f0fff0) !important; }}
@@ -530,9 +524,7 @@ body {{
 .module.digi .face.back  {{ background: var(--digi-back,  #f0f0f0) !important; }}
 
 /* Rings: solo laterales */
-.pulse-ring .face {{
-  transition: background-color 1.4s ease-out;
-}}
+.pulse-ring .face {{ /* snap instantáneo */ }}
 .pulse-ring.digi .face.front {{ background: var(--digi-front, #f0f0f0) !important; }}
 .pulse-ring.digi .face.right {{ background: var(--digi-right, #f0f0f0) !important; }}
 .pulse-ring.digi .face.left  {{ background: var(--digi-left,  #f0f0f0) !important; }}
