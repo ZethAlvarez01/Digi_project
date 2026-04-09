@@ -311,7 +311,7 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 100vw;
-  height: 280px;
+  height: 360px;
   pointer-events: none;
   opacity: 0;
   z-index: 0;
@@ -1301,7 +1301,7 @@ body {
 
 <div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <!-- Onda de pulso -->
-<svg id="pulse-wave" viewBox="0 0 1000 160" preserveAspectRatio="none"
+<svg id="pulse-wave" viewBox="0 0 1000 260" preserveAspectRatio="none"
      xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="wglow" x="-5%" y="-80%" width="110%" height="260%">
@@ -1310,7 +1310,7 @@ body {
       <feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <path id="wave-path" fill="none" stroke="#b400ff" stroke-width="3"
+  <path id="wave-path" fill="none" stroke="#b400ff" stroke-width="4"
         filter="url(#wglow)" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 
@@ -1580,16 +1580,30 @@ body {
 (function() {
   const svg  = document.getElementById("pulse-wave");
   const path = document.getElementById("wave-path");
-  const W = 1000, CY = 80;
+  const W = 1000, CY = 175;
   let   animId = null;
 
+  function gauss(x, cx, sigma, amp) {
+    return amp * Math.exp(-0.5 * Math.pow((x - cx) / sigma, 2));
+  }
+
   function makeWave() {
+    const MID = W / 2;
     let d = "";
-    for (let x = 0; x <= W; x += 3) {
+    for (let x = 0; x <= W; x += 2) {
       const t   = x / W;
       const env = Math.sin(t * Math.PI);
-      const y   = CY + Math.sin(x * 0.055) * 55 * env
-                     + (Math.random() - 0.5) * 32 * env;
+      /* ruido de fondo solo en flancos, casi nulo en spike */
+      const distMid = Math.abs(x - MID);
+      const spikeMask = 1 - Math.exp(-0.5 * Math.pow(distMid / 80, 2));
+      const noise    = (Math.random() - 0.5) * 10 * env * spikeMask;
+      const baseline = Math.sin(x * 0.025) * 6 * env;
+      /* componentes ECG — Y negativo = sube en pantalla */
+      const pWave = gauss(x, MID - 150, 28, -18);
+      const rWave = gauss(x, MID,        16, -148);
+      const sWave = gauss(x, MID + 28,   14,  38);
+      const tWave = gauss(x, MID + 130,  42, -42);
+      const y = CY + baseline + noise + pWave + rWave + sWave + tWave;
       d += (x === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
     }
     return d;
