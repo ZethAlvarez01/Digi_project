@@ -1294,10 +1294,10 @@ body {
   </div>
 </div>
 
-<div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
-<!-- Onda de pulso -->
+<!-- Onda de pulso: FUERA de cualquier parent con transform -->
 <canvas id="pulse-canvas"></canvas>
 
+<div style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:100;">
 <button class="btn-egg" id="btn">
   <svg class="btn-hand" viewBox="-2 2.5 13 12.5" xmlns="http://www.w3.org/2000/svg">
     <defs>
